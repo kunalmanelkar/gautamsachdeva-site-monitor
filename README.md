@@ -1,6 +1,6 @@
 # Site Health Monitor — gautamsachdeva.com
 
-Automated Playwright-based test suite that monitors [gautamsachdeva.com](https://gautamsachdeva.com) for regressions, broken links, missing content, SSL issues, and more. Results are displayed in a Streamlit dashboard.
+Automated Playwright test suite (74 checks) that monitors [gautamsachdeva.com](https://gautamsachdeva.com) for regressions, broken links, missing content, SSL issues, and more.  Results are turned into a self-contained HTML audit report that volunteers can open in any browser to track their manual checks.
 
 ## Quick start
 
@@ -11,16 +11,30 @@ pip install -e .
 playwright install chromium
 
 # Run the tests
-cd site-monitor && pytest -v
+cd site-monitor && pytest -v && cd ..
 
-# Launch the dashboard
-streamlit run app.py
+# Generate the audit report
+python generate_report.py          # -> report.html
+open report.html                   # open in browser
 ```
+
+## Volunteer workflow
+
+1. Someone runs the tests (or GitHub Actions runs them daily).
+2. `python generate_report.py` produces `report.html`.
+3. Share `report.html` with the volunteer (email, Slack, etc.).
+4. The volunteer opens it in their browser and works through each task:
+   - **Automated checks** are pre-verified — shown as a collapsed summary.
+   - **Manual checks** are interactive checkboxes with "How to check this" instructions.
+   - There's a notes field per section for anything to flag.
+5. Progress is auto-saved in the browser (localStorage).
+6. The volunteer clicks **Download Report** to save a timestamped copy with their notes baked in.
 
 ## Project structure
 
 ```
-app.py                  # Streamlit dashboard
+generate_report.py      # Generates report.html from test results
+report.html             # Generated — the audit report volunteers use
 site-monitor/
   conftest.py           # Root conftest — copies results to dated files
   pytest.ini            # pytest configuration
@@ -42,4 +56,4 @@ site-monitor/
 
 ## GitHub Actions
 
-The included workflow (`site-monitor.yml`) runs the test suite daily at 8 AM UTC, commits results, and uploads failure screenshots as artifacts. Move it to `.github/workflows/` in your repo to activate it.
+The included workflow (`.github/workflows/site-monitor.yml`) runs the test suite daily at 8 AM UTC, commits results, and uploads failure screenshots as artifacts.
