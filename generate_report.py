@@ -498,22 +498,25 @@ _TEST_URLS = {
 }
 
 
+_ASSET_EXTS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".css", ".js", ".woff", ".woff2", ".mp3", ".mp4")
+
 def _get_check_url(fn: str, raw: str) -> str:
     """Get the URL a volunteer should visit to verify this error."""
-    # First try to extract a URL from the error text itself
-    m = re.search(r"(https://gautamsachdeva\.com[^\s',\]\)\"]*)", raw)
-    if m:
-        return m.group(1).rstrip(".")
-
-    # Extract a path from the error
-    path_match = re.search(r"(/[\w-]+/)", raw)
-    if path_match:
-        return _BASE + path_match.group(1)
-
-    # Fall back to the test's known page
+    # 1. Prefer the test's known page — this is always the right page to visit
     path = _TEST_URLS.get(fn)
     if path:
         return _BASE + path
+
+    # 2. Try to extract a page URL from the error (skip static assets)
+    for m in re.finditer(r"(https://gautamsachdeva\.com[^\s',\]\)\"]*)", raw):
+        candidate = m.group(1).rstrip(".")
+        if not any(candidate.lower().endswith(ext) for ext in _ASSET_EXTS):
+            return candidate
+
+    # 3. Extract a path like /mentors/ from the error text
+    path_match = re.search(r"(/[\w-]+/)", raw)
+    if path_match:
+        return _BASE + path_match.group(1)
 
     return _BASE
 
