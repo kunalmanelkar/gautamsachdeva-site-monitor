@@ -427,12 +427,160 @@ def clean_error(t: dict) -> str:
     if crash and crash.get("message"):
         lines = crash["message"].split("\n")
         clean = [l for l in lines if not l.strip().startswith(("assert ", "+  where ", "E  "))]
-        return (clean[0] if clean else lines[0])[:200]
+        return (clean[0] if clean else lines[0])[:300]
     lr = call.get("longrepr", "")
     if lr:
         e = [l.strip().lstrip("E").strip() for l in lr.split("\n") if l.strip().startswith("E ")]
-        if e: return e[0][:200]
+        if e: return e[0][:300]
     return ""
+
+
+def humanize_error(fn: str, raw: str) -> tuple[str, str]:
+    """Translate a raw error into (plain_english, suggestion).
+
+    Returns a tuple of (what_happened, what_to_do).
+    """
+    r = raw.lower()
+
+    # --- HTTP status errors ---
+    if "returned http 404" in r or "http 404" in r:
+        # Extract the page name from the error
+        page = ""
+        m = re.search(r"(/[\w-]+/)", raw)
+        if m:
+            page = m.group(1)
+        return (
+            f"The page {page} doesn't exist on the website (it shows a \"Page Not Found\" error).",
+            "This page may have been deleted or renamed. Check with the website admin whether this page should still exist, or if the menu link pointing to it needs to be updated."
+        )
+    if "returned http 500" in r or "http 500" in r:
+        return (
+            "The page is returning a server error (the website is crashing when loading it).",
+            "This is a serious issue. The website admin or hosting provider needs to investigate. Share this report with them."
+        )
+    if "returned http 403" in r or "http 403" in r:
+        return (
+            "The page is blocking access (\"Forbidden\" error).",
+            "This might be a permissions issue on the server. Let the website admin know."
+        )
+
+    # --- Connection errors ---
+    if "err_connection_closed" in r or "err_connection_refused" in r or "err_connection_reset" in r:
+        url = ""
+        m = re.search(r"https?://[^\s]+", raw)
+        if m:
+            url = m.group(0)
+        return (
+            f"Couldn't connect to the website{' at ' + url if url else ''} — the connection was dropped.",
+            "This usually means the website was temporarily down or overloaded when the test ran. Try visiting the page yourself. If it loads fine now, this was a temporary glitch. If it's still down, contact the hosting provider."
+        )
+    if "timeout" in r and ("navigation" in r or "page.goto" in r):
+        return (
+            "The page took too long to load and the test gave up waiting.",
+            "Try visiting the page yourself. If it's slow for you too, the website may be under heavy load or the hosting might need attention."
+        )
+
+    # --- Broken images ---
+    if "broken images" in r:
+        m = re.search(r"\d+", raw)
+        count = m.group(0) if m else "some"
+        # Extract URLs if present
+        urls = re.findall(r"https?://[^\s',\]\)\"]+", raw)
+        url_note = ""
+        if urls:
+            names = [u.split("/")[-1].rstrip("\"'").rstrip(".")[:40] for u in urls[:3]]
+            url_note = " The images affected are: " + ", ".join(names) + "."
+        return (
+            f"{count} images on the page failed to load — visitors see blank spaces instead.{url_note}",
+            "This could mean the image files were deleted, renamed, or the upload was corrupted. The website admin should re-upload these images in WordPress."
+        )
+
+    # --- Dropdown / navigation ---
+    if "dropdown" in r and ("broken" in r or "not" in r):
+        return (
+            "The dropdown navigation menus aren't opening properly when you hover over them.",
+            "This is a CSS or JavaScript issue with the website theme. It may affect visitors trying to navigate the site. Let the website admin know."
+        )
+    if "submenu items" in r or "expected submenu" in r:
+        return (
+            "Some items are missing from the navigation dropdown menus.",
+            "Menu items may have been accidentally removed in WordPress. Check Appearance > Menus in the WordPress admin panel."
+        )
+    if "hamburger" in r and "not visible" in r:
+        return (
+            "The mobile menu icon (three lines) isn't showing up on phone screens.",
+            "Without this, visitors on phones can't navigate the website. This is likely a theme or CSS issue."
+        )
+
+    # --- SSL ---
+    if "ssl" in r and "expire" in r:
+        m = re.search(r"(\d+)\s*days", raw)
+        days = m.group(1) if m else "soon"
+        return (
+            f"The website's security certificate (SSL) expires in {days} days.",
+            "When it expires, visitors will see a scary \"Not Secure\" warning in their browser. Contact the hosting provider to renew the certificate immediately."
+        )
+
+    # --- Donation / payment ---
+    if "donation iframe" in r or "donate-module" in r:
+        return (
+            "The donation payment form on the Support page isn't loading.",
+            "Visitors can't donate through the website. The payment widget may need to be re-configured in WordPress, or the payment provider (Razorpay/Stripe) may have an issue."
+        )
+
+    # --- Overflow / mobile layout ---
+    if "horizontal overflow" in r or "scrollwidth" in r:
+        return (
+            "The page is wider than the screen on mobile phones, causing awkward sideways scrolling.",
+            "This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS."
+        )
+
+    # --- Missing content ---
+    if "no audio" in r or "no play" in r or "no.*player" in r:
+        return (
+            "The podcast player isn't loading — visitors can't listen to episodes on the page.",
+            "The podcast plugin may have been deactivated or there's a JavaScript error. Check the Plugins page in WordPress admin."
+        )
+    if "not found on" in r and "link" in r:
+        return (
+            "An expected link is missing from the page.",
+            "Someone may have accidentally removed it while editing the page. Check the page content in WordPress."
+        )
+    if "no.*found" in r and "form" in r:
+        return (
+            "The form on this page isn't showing up.",
+            "The form plugin or embed code may have been removed or broken. Check the page editor in WordPress."
+        )
+
+    # --- Broken links ---
+    if "broken" in r and "link" in r:
+        urls = re.findall(r"https?://[^\s',\]]+", raw)
+        if urls:
+            return (
+                f"Some links on the page are broken — they lead to error pages. The affected links include: {', '.join(u.split('/')[-1][:30] for u in urls[:3])}.",
+                "These links need to be updated or removed. Check each one by clicking it yourself, then fix or remove it in the WordPress page editor."
+            )
+        return (
+            "Some links on this page are broken — they lead to error pages.",
+            "Click through the links on the page yourself to find which ones are broken, then update or remove them in WordPress."
+        )
+
+    # --- Admin link leakage ---
+    if "admin link" in r:
+        return (
+            "WordPress admin/edit links are visible to the public on this page.",
+            "This is a security issue — visitors shouldn't see admin links. It's usually caused by being logged into WordPress while viewing the site. Log out and check again, or contact the developer."
+        )
+
+    # --- Generic fallback: strip technical prefixes ---
+    cleaned = raw
+    for prefix in ["AssertionError: ", "AssertionError:", "playwright._impl._errors.Error: ",
+                    "Page.goto: ", "net::", "Error: "]:
+        cleaned = cleaned.replace(prefix, "")
+    cleaned = cleaned.strip()
+    if cleaned:
+        return (cleaned, "")
+    return (raw, "")
 
 # ---------------------------------------------------------------------------
 # HTML template
@@ -628,7 +776,24 @@ details[open] > .auto-header::before { transform: rotate(90deg); }
 .auto-item.fail .auto-icon { color: var(--fail-fg); }
 .auto-item.skip { color: var(--text3); }
 .auto-item.skip .auto-icon { color: var(--text3); }
-.auto-err { font-size: 12px; color: var(--fail-fg); font-weight: 400; margin-top: 2px; }
+.auto-err {
+  margin-top: 6px; padding: 10px 12px; border-radius: 8px;
+  background: var(--fail-bg); border: 1px solid var(--fail-bd);
+  font-size: 13px; color: var(--fail-fg); font-weight: 400; line-height: 1.5;
+}
+.auto-err .err-what { font-weight: 500; }
+.auto-err .err-do { color: var(--text2); margin-top: 4px; font-size: 12px; }
+.auto-err .err-raw {
+  margin-top: 6px;
+}
+.auto-err .err-raw summary {
+  font-size: 11px; color: var(--text3); cursor: pointer; list-style: none; user-select: none;
+}
+.auto-err .err-raw summary::-webkit-details-marker { display: none; }
+.auto-err .err-raw pre {
+  font-size: 11px; color: var(--text3); margin: 4px 0 0; white-space: pre-wrap;
+  word-break: break-word; font-family: var(--font); line-height: 1.4;
+}
 
 /* Manual checks */
 .manual-card {
@@ -777,7 +942,12 @@ def build_html(results: dict, output: Path) -> None:
                     auto_items.append(f'<li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>{escape(nm)}</span></li>')
                 elif out == "failed":
                     auto_fail += 1
-                    err_html = f'<div class="auto-err">{escape(err)}</div>' if err else ''
+                    err_html = ''
+                    if err:
+                        what, do = humanize_error(fn, err)
+                        do_html = f'<div class="err-do">{escape(do)}</div>' if do else ''
+                        raw_html = f'<details class="err-raw"><summary>Technical details</summary><pre>{escape(err)}</pre></details>'
+                        err_html = f'<div class="auto-err"><div class="err-what">{escape(what)}</div>{do_html}{raw_html}</div>'
                     auto_items.append(f'<li class="auto-item fail"><span class="auto-icon">&#10007;</span><span>{escape(nm)}{err_html}</span></li>')
                 elif out == "skipped":
                     auto_skip += 1
