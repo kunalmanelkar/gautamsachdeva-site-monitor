@@ -435,56 +435,139 @@ def clean_error(t: dict) -> str:
     return ""
 
 
-def humanize_error(fn: str, raw: str) -> tuple[str, str]:
-    """Translate a raw error into (plain_english, suggestion).
+_BASE = "https://gautamsachdeva.com"
 
-    Returns a tuple of (what_happened, what_to_do).
+# Map test function names to the page they check
+_TEST_URLS = {
+    "test_homepage_loads": "/", "test_homepage_images_loaded": "/",
+    "test_homepage_key_sections_present": "/", "test_homepage_links_not_broken": "/",
+    "test_homepage_newsletter_form_visible": "/", "test_homepage_video_embeds_load": "/",
+    "test_homepage_book_cards_render": "/", "test_homepage_upcoming_events_section": "/",
+    "test_homepage_no_admin_links": "/", "test_homepage_ttfb": "/",
+    "test_desktop_nav_menus_present": "/", "test_desktop_dropdown_menus": "/",
+    "test_mobile_hamburger_menu": "/", "test_nav_links_resolve": "/",
+    "test_dropdown_works_on_subpages": "/about/",
+    "test_footer_links_present": "/",
+    "test_books_page_displays_books": "/books/", "test_books_page_images_load": "/books/",
+    "test_writings_page_loads": "/writings/", "test_writings_page_images_load": "/writings/",
+    "test_events_calendar_renders": "/events-calendar/",
+    "test_events_page_key_links": "/events-calendar/",
+    "test_individual_event_clickthrough": "/events-calendar/",
+    "test_event_detail_links_work": "/events-calendar/",
+    "test_events_calendar_renders_mobile": "/events-calendar/",
+    "test_events_page_mobile_no_overflow": "/events-calendar/",
+    "test_homepage_events_section_mobile": "/",
+    "test_photo_galleries_load_images": "/photo-gallery/",
+    "test_gallery_pages_individually": None,  # parametrized, extracted from error
+    "test_mentors_page_exists": "/mentors/",
+    "test_homage_page_loads": "/homage/",
+    "test_about_page_content": "/about/",
+    "test_recommended_reading_page": "/recommended-reading/",
+    "test_recommended_reading_subpages": None,  # parametrized
+    "test_faq_page_loads": "/frequently-asked-questions/",
+    "test_patreon_faq_page_loads": "/faq-patreon/",
+    "test_podcast_episode_archive": "/podcast/",
+    "test_excerpts_from_talks_page": "/excerpts-from-talks/",
+    "test_nav_dropdown_subpages_exist": None,  # multiple pages
+    "test_refund_policy_page_loads": "/refund-and-cancellation-policy/",
+    "test_donations_page_loads": "/donations/",
+    "test_russian_edition_book_links": "/books/",
+    "test_content_pages_no_admin_links": "/books/",
+    "test_podcast_page_audio_players": "/podcasts/",
+    "test_podcast_page_episode_list": "/podcasts/",
+    "test_podcast_play_pause_controls": "/podcasts/",
+    "test_podcast_platform_links": "/podcasts/",
+    "test_support_page_content": "/support-the-teaching/",
+    "test_support_page_donation_iframe": "/support-the-teaching/",
+    "test_support_page_youtube_membership": "/support-the-teaching/",
+    "test_contact_page_payment_links": "/contact/",
+    "test_bank_transfer_details_visible": "/bank-transfer-details/",
+    "test_google_pay_upi_visible": "/google-pay/",
+    "test_paypal_link_accessible": "/contact/",
+    "test_get_updates_form_elements": "/getupdates/",
+    "test_mailing_list_form_fillable": "/getupdates/",
+    "test_contact_page_mailto_links": "/contact/",
+    "test_contact_page_key_links": "/contact/",
+    "test_whatsapp_invite_link": "/",
+    "test_social_media_links_accessible": "/",
+    "test_amazon_book_links": "/books/",
+    "test_ssl_certificate_valid": "/",
+    "test_mobile_no_horizontal_overflow": "/",
+    "test_mobile_no_horizontal_overflow_pixel7": "/",
+    "test_key_pages_broken_link_scan": "/",
+}
+
+
+def _get_check_url(fn: str, raw: str) -> str:
+    """Get the URL a volunteer should visit to verify this error."""
+    # First try to extract a URL from the error text itself
+    m = re.search(r"(https://gautamsachdeva\.com[^\s',\]\)\"]*)", raw)
+    if m:
+        return m.group(1).rstrip(".")
+
+    # Extract a path from the error
+    path_match = re.search(r"(/[\w-]+/)", raw)
+    if path_match:
+        return _BASE + path_match.group(1)
+
+    # Fall back to the test's known page
+    path = _TEST_URLS.get(fn)
+    if path:
+        return _BASE + path
+
+    return _BASE
+
+
+def humanize_error(fn: str, raw: str) -> tuple[str, str, str]:
+    """Translate a raw error into (plain_english, suggestion, check_url).
+
+    Returns a tuple of (what_happened, what_to_do, url_to_verify).
     """
     r = raw.lower()
+    url = _get_check_url(fn, raw)
 
     # --- HTTP status errors ---
     if "returned http 404" in r or "http 404" in r:
-        # Extract the page name from the error
         page = ""
         m = re.search(r"(/[\w-]+/)", raw)
         if m:
             page = m.group(1)
         return (
             f"The page {page} doesn't exist on the website (it shows a \"Page Not Found\" error).",
-            "This page may have been deleted or renamed. Check with the website admin whether this page should still exist, or if the menu link pointing to it needs to be updated."
+            "This page may have been deleted or renamed. Check with the website admin whether this page should still exist, or if the menu link pointing to it needs to be updated.",
+            url,
         )
     if "returned http 500" in r or "http 500" in r:
         return (
             "The page is returning a server error (the website is crashing when loading it).",
-            "This is a serious issue. The website admin or hosting provider needs to investigate. Share this report with them."
+            "This is a serious issue. The website admin or hosting provider needs to investigate. Share this report with them.",
+            url,
         )
     if "returned http 403" in r or "http 403" in r:
         return (
             "The page is blocking access (\"Forbidden\" error).",
-            "This might be a permissions issue on the server. Let the website admin know."
+            "This might be a permissions issue on the server. Let the website admin know.",
+            url,
         )
 
     # --- Connection errors ---
     if "err_connection_closed" in r or "err_connection_refused" in r or "err_connection_reset" in r:
-        url = ""
-        m = re.search(r"https?://[^\s]+", raw)
-        if m:
-            url = m.group(0)
         return (
-            f"Couldn't connect to the website{' at ' + url if url else ''} — the connection was dropped.",
-            "This usually means the website was temporarily down or overloaded when the test ran. Try visiting the page yourself. If it loads fine now, this was a temporary glitch. If it's still down, contact the hosting provider."
+            "Couldn't connect to the website — the connection was dropped.",
+            "This usually means the website was temporarily down or overloaded when the test ran. Try visiting the page yourself. If it loads fine now, this was a temporary glitch. If it's still down, contact the hosting provider.",
+            url,
         )
     if "timeout" in r and ("navigation" in r or "page.goto" in r):
         return (
             "The page took too long to load and the test gave up waiting.",
-            "Try visiting the page yourself. If it's slow for you too, the website may be under heavy load or the hosting might need attention."
+            "Try visiting the page yourself. If it's slow for you too, the website may be under heavy load or the hosting might need attention.",
+            url,
         )
 
     # --- Broken images ---
     if "broken images" in r:
         m = re.search(r"\d+", raw)
         count = m.group(0) if m else "some"
-        # Extract URLs if present
         urls = re.findall(r"https?://[^\s',\]\)\"]+", raw)
         url_note = ""
         if urls:
@@ -492,24 +575,28 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str]:
             url_note = " The images affected are: " + ", ".join(names) + "."
         return (
             f"{count} images on the page failed to load — visitors see blank spaces instead.{url_note}",
-            "This could mean the image files were deleted, renamed, or the upload was corrupted. The website admin should re-upload these images in WordPress."
+            "This could mean the image files were deleted, renamed, or the upload was corrupted. The website admin should re-upload these images in WordPress.",
+            url,
         )
 
     # --- Dropdown / navigation ---
     if "dropdown" in r and ("broken" in r or "not" in r):
         return (
             "The dropdown navigation menus aren't opening properly when you hover over them.",
-            "This is a CSS or JavaScript issue with the website theme. It may affect visitors trying to navigate the site. Let the website admin know."
+            "This is a CSS or JavaScript issue with the website theme. It may affect visitors trying to navigate the site. Let the website admin know.",
+            url,
         )
     if "submenu items" in r or "expected submenu" in r:
         return (
             "Some items are missing from the navigation dropdown menus.",
-            "Menu items may have been accidentally removed in WordPress. Check Appearance > Menus in the WordPress admin panel."
+            "Menu items may have been accidentally removed in WordPress. Check Appearance > Menus in the WordPress admin panel.",
+            url,
         )
     if "hamburger" in r and "not visible" in r:
         return (
             "The mobile menu icon (three lines) isn't showing up on phone screens.",
-            "Without this, visitors on phones can't navigate the website. This is likely a theme or CSS issue."
+            "Without this, visitors on phones can't navigate the website. This is likely a theme or CSS issue.",
+            url,
         )
 
     # --- SSL ---
@@ -518,38 +605,44 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str]:
         days = m.group(1) if m else "soon"
         return (
             f"The website's security certificate (SSL) expires in {days} days.",
-            "When it expires, visitors will see a scary \"Not Secure\" warning in their browser. Contact the hosting provider to renew the certificate immediately."
+            "When it expires, visitors will see a scary \"Not Secure\" warning in their browser. Contact the hosting provider to renew the certificate immediately.",
+            url,
         )
 
     # --- Donation / payment ---
     if "donation iframe" in r or "donate-module" in r:
         return (
             "The donation payment form on the Support page isn't loading.",
-            "Visitors can't donate through the website. The payment widget may need to be re-configured in WordPress, or the payment provider (Razorpay/Stripe) may have an issue."
+            "Visitors can't donate through the website. The payment widget may need to be re-configured in WordPress, or the payment provider (Razorpay/Stripe) may have an issue.",
+            url,
         )
 
     # --- Overflow / mobile layout ---
     if "horizontal overflow" in r or "scrollwidth" in r:
         return (
             "The page is wider than the screen on mobile phones, causing awkward sideways scrolling.",
-            "This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS."
+            "This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS.",
+            url,
         )
 
     # --- Missing content ---
     if "no audio" in r or "no play" in r or "no.*player" in r:
         return (
             "The podcast player isn't loading — visitors can't listen to episodes on the page.",
-            "The podcast plugin may have been deactivated or there's a JavaScript error. Check the Plugins page in WordPress admin."
+            "The podcast plugin may have been deactivated or there's a JavaScript error. Check the Plugins page in WordPress admin.",
+            url,
         )
     if "not found on" in r and "link" in r:
         return (
             "An expected link is missing from the page.",
-            "Someone may have accidentally removed it while editing the page. Check the page content in WordPress."
+            "Someone may have accidentally removed it while editing the page. Check the page content in WordPress.",
+            url,
         )
     if "no.*found" in r and "form" in r:
         return (
             "The form on this page isn't showing up.",
-            "The form plugin or embed code may have been removed or broken. Check the page editor in WordPress."
+            "The form plugin or embed code may have been removed or broken. Check the page editor in WordPress.",
+            url,
         )
 
     # --- Broken links ---
@@ -558,18 +651,21 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str]:
         if urls:
             return (
                 f"Some links on the page are broken — they lead to error pages. The affected links include: {', '.join(u.split('/')[-1][:30] for u in urls[:3])}.",
-                "These links need to be updated or removed. Check each one by clicking it yourself, then fix or remove it in the WordPress page editor."
+                "These links need to be updated or removed. Check each one by clicking it yourself, then fix or remove it in the WordPress page editor.",
+                url,
             )
         return (
             "Some links on this page are broken — they lead to error pages.",
-            "Click through the links on the page yourself to find which ones are broken, then update or remove them in WordPress."
+            "Click through the links on the page yourself to find which ones are broken, then update or remove them in WordPress.",
+            url,
         )
 
     # --- Admin link leakage ---
     if "admin link" in r:
         return (
             "WordPress admin/edit links are visible to the public on this page.",
-            "This is a security issue — visitors shouldn't see admin links. It's usually caused by being logged into WordPress while viewing the site. Log out and check again, or contact the developer."
+            "This is a security issue — visitors shouldn't see admin links. It's usually caused by being logged into WordPress while viewing the site. Log out and check again, or contact the developer.",
+            url,
         )
 
     # --- Generic fallback: strip technical prefixes ---
@@ -579,8 +675,8 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str]:
         cleaned = cleaned.replace(prefix, "")
     cleaned = cleaned.strip()
     if cleaned:
-        return (cleaned, "")
-    return (raw, "")
+        return (cleaned, "", url)
+    return (raw, "", url)
 
 # ---------------------------------------------------------------------------
 # HTML template
@@ -783,6 +879,17 @@ details[open] > .auto-header::before { transform: rotate(90deg); }
 }
 .auto-err .err-what { font-weight: 500; }
 .auto-err .err-do { color: var(--text2); margin-top: 4px; font-size: 12px; }
+.auto-err .err-link {
+  margin-top: 8px;
+}
+.auto-err .err-link a {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  text-decoration: none; padding: 4px 12px;
+  border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--surface); transition: background .15s;
+}
+.auto-err .err-link a:hover { background: var(--accent-light); }
 .auto-err .err-raw {
   margin-top: 6px;
 }
@@ -944,10 +1051,11 @@ def build_html(results: dict, output: Path) -> None:
                     auto_fail += 1
                     err_html = ''
                     if err:
-                        what, do = humanize_error(fn, err)
+                        what, do, check_url = humanize_error(fn, err)
                         do_html = f'<div class="err-do">{escape(do)}</div>' if do else ''
+                        link_html = f'<div class="err-link"><a href="{escape(check_url)}" target="_blank">Check it yourself &#8599;</a></div>' if check_url else ''
                         raw_html = f'<details class="err-raw"><summary>Technical details</summary><pre>{escape(err)}</pre></details>'
-                        err_html = f'<div class="auto-err"><div class="err-what">{escape(what)}</div>{do_html}{raw_html}</div>'
+                        err_html = f'<div class="auto-err"><div class="err-what">{escape(what)}</div>{do_html}{link_html}{raw_html}</div>'
                     auto_items.append(f'<li class="auto-item fail"><span class="auto-icon">&#10007;</span><span>{escape(nm)}{err_html}</span></li>')
                 elif out == "skipped":
                     auto_skip += 1
