@@ -56,3 +56,68 @@ def test_podcast_page_episode_list(desktop_page: Page):
         f"Podcast page lacks episode search input and has only "
         f"{episode_links.count()} episode links (expected search OR >= 3 links)"
     )
+
+
+def test_podcast_play_pause_controls(desktop_page: Page):
+    """Podcast player has visible play/pause, skip, and navigation controls."""
+    desktop_page.goto(f"{BASE_URL}/podcasts/", wait_until="networkidle")
+
+    # The podcast player plugin initializes asynchronously via JS.
+    # Wait generously for the player container, then for controls inside it.
+    try:
+        desktop_page.wait_for_selector(
+            ".pp-podcast, [class*='pp-podcast']",
+            timeout=15_000,
+        )
+    except Exception:
+        pass
+    desktop_page.wait_for_timeout(5000)
+
+    # Play/Pause button — try multiple selector strategies
+    play_pause = desktop_page.locator(
+        ".ppjs__playpause-button button, "
+        ".ppjs__playpause-button, "
+        "[class*='playpause'] button, "
+        "button[aria-label*='play' i], "
+        "button[aria-label*='pause' i]"
+    )
+
+    # Fallback: any button inside a podcast player container
+    if play_pause.count() == 0:
+        play_pause = desktop_page.locator(
+            ".pp-podcast button, [class*='pp-podcast'] button"
+        )
+
+    assert play_pause.count() > 0, (
+        "No play/pause button found on podcast page"
+    )
+
+    # Verify at least one play/pause button is visible
+    visible_pp = False
+    for i in range(play_pause.count()):
+        if play_pause.nth(i).is_visible():
+            visible_pp = True
+            break
+    assert visible_pp, "Play/pause button exists but is not visible"
+
+    # Skip/navigation controls
+    skip_controls = desktop_page.locator(
+        ".ppjs__skip-backward-button button, .ppjs__jump-forward-button button, "
+        "button.pp-prev-btn, button.pp-next-btn"
+    )
+    assert skip_controls.count() >= 2, (
+        f"Only {skip_controls.count()} skip/nav controls found (expected >= 2)"
+    )
+
+    # Audio element exists
+    audio = desktop_page.locator("audio")
+    assert audio.count() > 0, "No <audio> element found on podcast page"
+
+    # Audio has a valid source
+    audio_src = audio.first.evaluate("""el => {
+        const source = el.querySelector('source');
+        return source ? source.src : el.src;
+    }""")
+    assert audio_src and len(audio_src) > 10, (
+        f"Audio element has no valid source: {audio_src}"
+    )

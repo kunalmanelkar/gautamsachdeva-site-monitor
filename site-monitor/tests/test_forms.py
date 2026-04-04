@@ -96,3 +96,53 @@ def test_whatsapp_invite_link(desktop_page: Page):
     # Check the link is accessible (don't navigate — WhatsApp may redirect)
     status = check_link_status(href)
     assert status == 0 or status < 400, f"WhatsApp link returned status {status}"
+
+
+def test_mailing_list_form_fillable(desktop_page: Page):
+    """Get Updates form fields are fillable (email, name, city, country, checkboxes).
+
+    Fills all fields without submitting to verify the form is interactive.
+    Does NOT submit — we never create real subscriptions in tests.
+    """
+    desktop_page.goto(f"{BASE_URL}/getupdates/", wait_until="domcontentloaded")
+
+    # Email field
+    email = desktop_page.locator("#mce-EMAIL")
+    expect(email).to_be_visible()
+    email.fill("test@example.com")
+    assert email.input_value() == "test@example.com", "Email field not fillable"
+
+    # First name
+    fname = desktop_page.locator("#mce-FNAME")
+    expect(fname).to_be_visible()
+    fname.fill("Test")
+    assert fname.input_value() == "Test", "First name field not fillable"
+
+    # Last name
+    lname = desktop_page.locator("#mce-LNAME")
+    expect(lname).to_be_visible()
+    lname.fill("User")
+    assert lname.input_value() == "User", "Last name field not fillable"
+
+    # City
+    city = desktop_page.locator("#mce-CITY")
+    expect(city).to_be_visible()
+    city.fill("Mumbai")
+    assert city.input_value() == "Mumbai", "City field not fillable"
+
+    # Country
+    country = desktop_page.locator("#mce-COUNTRY")
+    expect(country).to_be_visible()
+    country.fill("India")
+    assert country.input_value() == "India", "Country field not fillable"
+
+    # GDPR checkboxes exist and are interactive
+    subscribe_cb = desktop_page.locator("#gdpr_15145")
+    mumbai_cb = desktop_page.locator("#gdpr_15149")
+    assert subscribe_cb.count() > 0, "Subscribe checkbox (#gdpr_15145) not found"
+    assert mumbai_cb.count() > 0, "Mumbai talks checkbox (#gdpr_15149) not found"
+
+    # Submit button is present and enabled
+    submit = desktop_page.locator("#mc-embedded-subscribe")
+    expect(submit).to_be_visible()
+    expect(submit).to_be_enabled()

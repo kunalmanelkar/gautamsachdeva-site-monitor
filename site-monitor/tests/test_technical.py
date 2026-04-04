@@ -124,3 +124,76 @@ def test_homepage_ttfb(desktop_page: Page):
     elif ttfb_s > 3.0:
         import warnings
         warnings.warn(f"Homepage TTFB is slow: {ttfb_s:.2f}s (> 3s)")
+
+
+def test_events_calendar_renders_mobile(mobile_page: Page):
+    """Events calendar MEC widget renders on mobile viewport."""
+    resp = mobile_page.goto(
+        f"{BASE_URL}/events-calendar/", wait_until="domcontentloaded"
+    )
+    assert resp and resp.status == 200, (
+        f"/events-calendar/ returned HTTP {resp.status if resp else 'no response'} on mobile"
+    )
+    mobile_page.wait_for_timeout(3000)
+
+    body_text = mobile_page.text_content("body").lower()
+
+    # MEC widget should render on mobile
+    mec_widget = mobile_page.locator(
+        ".mec-wrap, .mec-calendar, .mec-events-list, "
+        ".mec-full-calendar-wrap, .mec-event-listing"
+    )
+    has_no_event_msg = "no event found" in body_text or "no upcoming" in body_text
+
+    assert mec_widget.count() > 0 or has_no_event_msg, (
+        "MEC calendar widget not rendering on mobile viewport"
+    )
+
+
+def test_events_page_mobile_no_overflow(mobile_page: Page):
+    """Events calendar page has no horizontal overflow on mobile."""
+    mobile_page.goto(
+        f"{BASE_URL}/events-calendar/", wait_until="domcontentloaded"
+    )
+    mobile_page.wait_for_timeout(3000)
+
+    overflow_info = mobile_page.evaluate("""() => {
+        const scrollW = document.documentElement.scrollWidth;
+        const clientW = document.documentElement.clientWidth;
+        // Find the widest offending element
+        let widest = null;
+        let widestW = clientW;
+        for (const el of document.querySelectorAll('*')) {
+            if (el.scrollWidth > widestW) {
+                widestW = el.scrollWidth;
+                widest = el.tagName + '.' + [...el.classList].join('.');
+            }
+        }
+        return { scrollW, clientW, overflow: scrollW > clientW, widest, widestW };
+    }""")
+
+    assert not overflow_info["overflow"], (
+        f"Events page has horizontal overflow on mobile — "
+        f"scrollWidth={overflow_info['scrollW']}px vs clientWidth={overflow_info['clientW']}px. "
+        f"Widest element: {overflow_info['widest']} ({overflow_info['widestW']}px)"
+    )
+
+
+def test_homepage_events_section_mobile(mobile_page: Page):
+    """Homepage events section renders on mobile without breaking."""
+    mobile_page.goto(BASE_URL, wait_until="domcontentloaded")
+    mobile_page.wait_for_timeout(2000)
+
+    # Events section should be present on mobile
+    events_heading = mobile_page.locator(
+        "h5:has-text('Events'), h4:has-text('Events'), "
+        "h3:has-text('Events'), h2:has-text('Events')"
+    )
+    mec_widget = mobile_page.locator(".mec-wrap, .mec-full-calendar-wrap")
+
+    has_heading = events_heading.count() > 0
+    has_mec = mec_widget.count() > 0
+
+    assert has_heading or has_mec, (
+        "Events section not found on homepage mobile viewport"
+    )

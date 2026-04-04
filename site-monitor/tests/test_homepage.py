@@ -1,11 +1,11 @@
-"""F1: Homepage load, images, key sections, newsletter form."""
+"""F1: Homepage load, images, key sections, newsletter form, videos, books, events."""
 
 import re
 
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL
+from .conftest import BASE_URL, check_link_status
 
 
 def test_homepage_loads(desktop_page: Page):
@@ -94,4 +94,137 @@ def test_homepage_newsletter_form_visible(desktop_page: Page):
 
     assert has_newsletter_cta or has_visible_link, (
         "No newsletter form or visible Get Updates link found on homepage"
+    )
+
+
+def test_homepage_video_embeds_load(desktop_page: Page):
+    """Homepage has embedded video (YouTube iframe) and it loads."""
+    desktop_page.goto(BASE_URL, wait_until="networkidle")
+
+    # Elementor injects the YouTube iframe via JS after page load — wait for it
+    try:
+        desktop_page.wait_for_selector(
+            "iframe.elementor-video, iframe[src*='youtube.com/embed'], "
+            "iframe[src*='youtu.be'], video",
+            timeout=10_000,
+        )
+    except Exception:
+        pass
+
+    video_iframes = desktop_page.locator(
+        "iframe.elementor-video, "
+        "iframe[src*='youtube.com/embed'], "
+        "iframe[src*='youtu.be']"
+    )
+    video_elements = desktop_page.locator("video")
+
+    # Also check for Elementor's click-to-play overlay (video present but not yet iframe)
+    video_overlays = desktop_page.locator(
+        ".elementor-custom-embed-image-overlay, "
+        "[data-settings*='youtube_url']"
+    )
+
+    has_iframe = video_iframes.count() > 0
+    has_video = video_elements.count() > 0
+    has_overlay = video_overlays.count() > 0
+
+    assert has_iframe or has_video or has_overlay, (
+        "No video embeds (YouTube iframes, <video>, or Elementor video widgets) found on homepage"
+    )
+
+    if has_iframe:
+        src = video_iframes.first.get_attribute("src") or ""
+        assert "youtube.com/embed/" in src or "youtu.be" in src, (
+            f"Video iframe src is not a YouTube embed: {src}"
+        )
+        # Verify the YouTube embed URL is reachable
+        status = check_link_status(src)
+        assert status == 0 or status < 400, (
+            f"YouTube embed URL broken: {src} (status {status})"
+        )
+
+
+def test_homepage_book_cards_render(desktop_page: Page):
+    """Homepage book section displays actual book cover images, not just text."""
+    desktop_page.goto(BASE_URL, wait_until="networkidle")
+
+    # Books section uses Elementor widget-image elements with links to /book/ pages
+    # Class is "book-liist-block" on /books/ page, but homepage uses Elementor image widgets
+    book_section_images = desktop_page.locator(
+        "section.elementor-element-e9be399 .elementor-widget-image a[href*='/book/'] img, "
+        ".home-books .o-neuron-hover-holder img, "
+        ".book-liist-block img"
+    )
+
+    # Fallback: any image that links to a book page anywhere on the homepage
+    book_linked_images = desktop_page.locator("a[href*='/book/'] img")
+
+    total = book_section_images.count() + book_linked_images.count()
+    assert total >= 3, (
+        f"Homepage shows only {total} book cover images (expected >= 3) — "
+        "books may not be rendering visually"
+    )
+
+    # Verify at least 3 book cover images actually loaded (naturalWidth > 0)
+    loaded = 0
+    for loc in [book_section_images, book_linked_images]:
+        for i in range(loc.count()):
+            natural_width = loc.nth(i).evaluate("el => el.naturalWidth")
+            if natural_width > 0:
+                loaded += 1
+    assert loaded >= 3, (
+        f"Only {loaded} book cover images loaded on homepage (expected >= 3)"
+    )
+
+
+def test_homepage_upcoming_events_section(desktop_page: Page):
+    """Homepage events section renders the MEC calendar widget or event listings."""
+    desktop_page.goto(BASE_URL, wait_until="domcontentloaded")
+    desktop_page.wait_for_timeout(2000)
+
+    # MEC widget on homepage
+    mec_widget = desktop_page.locator(
+        ".mec-wrap, .mec-calendar, .mec-events-list, "
+        ".mec-full-calendar-wrap, .mec-skin-list-events-container"
+    )
+
+    # Events heading
+    events_heading = desktop_page.locator(
+        "h5:has-text('Events'), h4:has-text('Events'), h3:has-text('Events'), "
+        "h2:has-text('Events')"
+    )
+
+    has_mec = mec_widget.count() > 0
+    has_heading = events_heading.count() > 0
+
+    assert has_mec or has_heading, (
+        "No events section found on homepage — neither MEC widget nor Events heading"
+    )
+
+    if has_mec:
+        # Check if widget actually rendered (has content, even if "No event found")
+        container_text = mec_widget.first.text_content().strip()
+        assert len(container_text) > 0, "MEC widget exists but has no content"
+
+
+def test_homepage_no_admin_links(desktop_page: Page):
+    """No WordPress admin links leak into public homepage content."""
+    desktop_page.goto(BASE_URL, wait_until="domcontentloaded")
+
+    admin_links = desktop_page.locator(
+        "a[href*='wp-admin'], a[href*='wp-login'], "
+        "a[href*='/administrator/'], a[href*='action=edit']"
+    )
+
+    leaked = []
+    for i in range(admin_links.count()):
+        link = admin_links.nth(i)
+        # Only flag visible links (not hidden meta/toolbar)
+        if link.is_visible():
+            href = link.get_attribute("href") or ""
+            text = link.text_content().strip()[:50]
+            leaked.append(f"'{text}' -> {href}")
+
+    assert len(leaked) == 0, (
+        f"Admin links visible on homepage: {leaked}"
     )

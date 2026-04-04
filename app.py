@@ -34,6 +34,10 @@ FRIENDLY_NAMES = {
     "test_homepage_key_sections_present": "Key sections present (podcast, book, event, about)",
     "test_homepage_links_not_broken": "Internal links resolve (no 404/500)",
     "test_homepage_newsletter_form_visible": "Newsletter / Get Updates CTA visible",
+    "test_homepage_video_embeds_load": "Homepage video embeds load (YouTube)",
+    "test_homepage_book_cards_render": "Homepage book covers render visually",
+    "test_homepage_upcoming_events_section": "Homepage events section (MEC widget)",
+    "test_homepage_no_admin_links": "No admin links leak on homepage",
     # Navigation
     "test_desktop_nav_menus_present": "Desktop nav has all top-level items",
     "test_desktop_dropdown_menus": "Dropdown menus have submenu items",
@@ -60,9 +64,16 @@ FRIENDLY_NAMES = {
     "test_nav_dropdown_subpages_exist": "All nav dropdown pages return HTTP 200",
     "test_refund_policy_page_loads": "Refund policy page loads",
     "test_donations_page_loads": "Donations page loads",
+    "test_books_page_images_load": "Book cover images load on /books/",
+    "test_writings_page_images_load": "Writing featured images load on /writings/",
+    "test_russian_edition_book_links": "Russian edition book links accessible",
+    "test_individual_event_clickthrough": "Individual event detail pages load",
+    "test_event_detail_links_work": "Links within event detail pages work",
+    "test_content_pages_no_admin_links": "No admin links leak on content pages",
     # Podcasts
     "test_podcast_page_audio_players": "Podcast page has audio players",
     "test_podcast_page_episode_list": "Podcast page has episode list / search",
+    "test_podcast_play_pause_controls": "Podcast play/pause and skip controls visible",
     # Payments
     "test_support_page_content": "Support the Teaching page loads",
     "test_support_page_donation_iframe": "Donation payment iframe loads",
@@ -76,6 +87,7 @@ FRIENDLY_NAMES = {
     "test_contact_page_mailto_links": "Contact page has mailto links",
     "test_contact_page_key_links": "Contact page has key links",
     "test_whatsapp_invite_link": "WhatsApp invite link works",
+    "test_mailing_list_form_fillable": "Mailing list form fields are fillable",
     # External Links
     "test_social_media_links_accessible": "Social media links accessible",
     "test_amazon_book_links": "Amazon purchase links work on book pages",
@@ -86,6 +98,9 @@ FRIENDLY_NAMES = {
     "test_mobile_no_horizontal_overflow_pixel7": "No horizontal overflow (Pixel 7)",
     "test_key_pages_broken_link_scan": "Key pages broken link scan",
     "test_homepage_ttfb": "Homepage TTFB (time to first byte)",
+    "test_events_calendar_renders_mobile": "Events calendar renders on mobile",
+    "test_events_page_mobile_no_overflow": "Events page no horizontal overflow (mobile)",
+    "test_homepage_events_section_mobile": "Homepage events section renders on mobile",
 }
 
 SEVERITY = {
@@ -115,6 +130,22 @@ SEVERITY = {
     "test_refund_policy_page_loads": "medium",
     "test_donations_page_loads": "medium",
     "test_support_page_donation_iframe": "critical",
+    # New tests — gap coverage
+    "test_homepage_video_embeds_load": "medium",
+    "test_homepage_book_cards_render": "high",
+    "test_homepage_upcoming_events_section": "high",
+    "test_homepage_no_admin_links": "critical",
+    "test_books_page_images_load": "high",
+    "test_writings_page_images_load": "medium",
+    "test_russian_edition_book_links": "medium",
+    "test_individual_event_clickthrough": "high",
+    "test_event_detail_links_work": "medium",
+    "test_content_pages_no_admin_links": "critical",
+    "test_podcast_play_pause_controls": "high",
+    "test_mailing_list_form_fillable": "high",
+    "test_events_calendar_renders_mobile": "high",
+    "test_events_page_mobile_no_overflow": "high",
+    "test_homepage_events_section_mobile": "medium",
 }
 
 SEVERITY_LABELS = {

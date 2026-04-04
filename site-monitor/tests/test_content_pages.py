@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL
+from .conftest import BASE_URL, check_link_status
 
 
 def test_books_page_displays_books(desktop_page: Page):
@@ -327,4 +327,249 @@ def test_donations_page_loads(desktop_page: Page):
     resp = desktop_page.goto(f"{BASE_URL}/donations/", wait_until="domcontentloaded")
     assert resp and resp.status == 200, (
         f"/donations/ returned HTTP {resp.status if resp else 'no response'}"
+    )
+
+
+def test_books_page_images_load(desktop_page: Page):
+    """Books page displays cover images for each book and they load correctly."""
+    desktop_page.goto(f"{BASE_URL}/books/", wait_until="networkidle")
+
+    # Book cards use class "book-liist-block" (note the typo — double i)
+    book_cards = desktop_page.locator(".book-liist-block")
+    assert book_cards.count() >= 5, (
+        f"Books page has only {book_cards.count()} book cards (expected >= 5)"
+    )
+
+    # Check that each book card has a cover image that loaded
+    broken_covers = []
+    for i in range(book_cards.count()):
+        card = book_cards.nth(i)
+        img = card.locator("img").first
+        if img.count() == 0:
+            title = card.locator("h2").text_content().strip()[:40]
+            broken_covers.append(f"'{title}' — no <img> element")
+            continue
+        natural_width = img.evaluate("el => el.naturalWidth")
+        if natural_width == 0:
+            src = img.get_attribute("src") or "unknown"
+            broken_covers.append(f"image not loaded: {src}")
+
+    assert len(broken_covers) == 0, (
+        f"Book cover images broken: {broken_covers}"
+    )
+
+
+def test_writings_page_images_load(desktop_page: Page):
+    """Writings/blog page displays featured images for each post and they load."""
+    desktop_page.goto(f"{BASE_URL}/writings/", wait_until="networkidle")
+
+    writing_items = desktop_page.locator(".writing-item")
+    assert writing_items.count() >= 3, (
+        f"Writings page has only {writing_items.count()} items (expected >= 3)"
+    )
+
+    # Check featured images in writing items
+    broken = []
+    checked = 0
+    for i in range(min(writing_items.count(), 15)):
+        item = writing_items.nth(i)
+        img = item.locator("img.wp-post-image, img")
+        if img.count() == 0:
+            title = item.locator("h4").text_content().strip()[:40] if item.locator("h4").count() > 0 else f"item {i}"
+            broken.append(f"'{title}' — no featured image")
+            continue
+        natural_width = img.first.evaluate("el => el.naturalWidth")
+        checked += 1
+        if natural_width == 0:
+            src = img.first.get_attribute("src") or "unknown"
+            broken.append(f"image not loaded: {src}")
+
+    assert checked > 0, "No writing items with images found to check"
+    assert len(broken) <= 1, (
+        f"Writing featured images broken ({len(broken)}): {broken}"
+    )
+
+
+def test_russian_edition_book_links(desktop_page: Page):
+    """Russian edition book links on individual book pages are present and accessible."""
+    # These books are known to have Russian edition links (to amrita-rus.ru)
+    books_with_russian = [
+        ("/book/pointers-from-ramesh-balsekar/", "Pointers from Ramesh Balsekar"),
+        ("/book/the-buddhas-sword/", "The Buddha's Sword"),
+    ]
+
+    failures = []
+    for path, name in books_with_russian:
+        resp = desktop_page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
+        if not resp or resp.status >= 400:
+            failures.append(f"{name}: page returned HTTP {resp.status if resp else 'no response'}")
+            continue
+
+        # Look for Russian edition links
+        russian_links = desktop_page.locator(
+            "a:has-text('Russian'), a:has-text('russian'), "
+            "a[href*='amrita-rus.ru'], a[href*='russian']"
+        )
+        if russian_links.count() == 0:
+            failures.append(f"{name}: no Russian edition link found")
+            continue
+
+        # Verify the link is well-formed and record status
+        href = russian_links.first.get_attribute("href") or ""
+        if href:
+            assert href.startswith("http"), (
+                f"{name}: Russian link is not a valid URL: {href}"
+            )
+            status = check_link_status(href, timeout=15)
+            # amrita-rus.ru returns 405 for bot user-agents — accept as "link present"
+            bot_blocked = "amrita-rus.ru" in href and status in (403, 405, 503)
+            if not bot_blocked and (status >= 400 or status == -1):
+                failures.append(f"{name}: Russian link broken — {href} (status {status})")
+
+    assert len(failures) == 0, (
+        f"Russian edition book link issues: {failures}"
+    )
+
+
+def test_individual_event_clickthrough(desktop_page: Page):
+    """Click into individual events from the events calendar and verify detail pages load."""
+    desktop_page.goto(f"{BASE_URL}/events-calendar/", wait_until="domcontentloaded")
+    desktop_page.wait_for_timeout(3000)
+
+    # MEC event articles
+    event_links = desktop_page.locator(
+        ".mec-event-article a.mec-color-hover, "
+        ".mec-event-title a, "
+        "a[href*='/events/']"
+    )
+
+    body_text = desktop_page.text_content("body").lower()
+    has_no_events = "no event found" in body_text or "no upcoming" in body_text
+
+    if event_links.count() == 0 and has_no_events:
+        pytest.skip("No events currently listed — cannot test click-through")
+
+    if event_links.count() == 0:
+        pytest.fail("Events page has neither event links nor a 'no event found' message")
+
+    # Collect unique event URLs
+    seen = set()
+    event_urls = []
+    for i in range(event_links.count()):
+        href = event_links.nth(i).get_attribute("href") or ""
+        if href.startswith("http") and "/events/" in href and href not in seen:
+            seen.add(href)
+            event_urls.append(href)
+
+    failures = []
+    for url in event_urls[:5]:
+        resp = desktop_page.goto(url, wait_until="domcontentloaded")
+        if not resp or resp.status >= 400:
+            failures.append(f"{url}: HTTP {resp.status if resp else 'no response'}")
+            continue
+
+        # Event detail page should have title and content
+        title = desktop_page.locator(
+            "h1.mec-single-title, .mec-event-title, h1"
+        )
+        if title.count() == 0:
+            failures.append(f"{url}: no event title found")
+            continue
+
+        # Check body has meaningful content
+        event_body = desktop_page.text_content("body").strip()
+        if len(event_body) < 100:
+            failures.append(f"{url}: event detail page appears empty")
+
+    assert len(failures) == 0, (
+        f"Event detail page issues: {failures}"
+    )
+
+
+def test_event_detail_links_work(desktop_page: Page):
+    """Links within event detail pages (registration, WhatsApp, phone, maps) work."""
+    desktop_page.goto(f"{BASE_URL}/events-calendar/", wait_until="domcontentloaded")
+    desktop_page.wait_for_timeout(3000)
+
+    event_links = desktop_page.locator(
+        ".mec-event-article a.mec-color-hover, "
+        ".mec-event-title a, "
+        "a[href*='/events/']"
+    )
+
+    body_text = desktop_page.text_content("body").lower()
+    has_no_events = "no event found" in body_text or "no upcoming" in body_text
+
+    if event_links.count() == 0 and has_no_events:
+        pytest.skip("No events currently listed — cannot test event detail links")
+
+    if event_links.count() == 0:
+        pytest.fail("Events page has neither event links nor a 'no event found' message")
+
+    # Visit up to 3 event detail pages and check their internal links
+    seen = set()
+    event_urls = []
+    for i in range(event_links.count()):
+        href = event_links.nth(i).get_attribute("href") or ""
+        if href.startswith("http") and "/events/" in href and href not in seen:
+            seen.add(href)
+            event_urls.append(href)
+
+    broken_links = []
+    for url in event_urls[:3]:
+        resp = desktop_page.goto(url, wait_until="domcontentloaded")
+        if not resp or resp.status >= 400:
+            continue
+
+        # Gather all links on the event detail page
+        all_links = desktop_page.locator(
+            ".mec-event-content a[href], .mec-single-event-description a[href], "
+            ".mec-events-content a[href]"
+        )
+
+        for i in range(all_links.count()):
+            href = all_links.nth(i).get_attribute("href") or ""
+            if not href.startswith("http"):
+                continue
+            # Skip mailto/tel
+            if href.startswith(("mailto:", "tel:", "javascript:")):
+                continue
+            status = check_link_status(href, timeout=10)
+            if status >= 400 or status == -1:
+                text = all_links.nth(i).text_content().strip()[:30]
+                broken_links.append(f"'{text}' -> {href} (status {status})")
+
+    assert len(broken_links) == 0, (
+        f"Broken links in event detail pages: {broken_links}"
+    )
+
+
+def test_content_pages_no_admin_links(desktop_page: Page):
+    """No WordPress admin links leak into public content pages."""
+    pages_to_check = [
+        "/books/",
+        "/writings/",
+        "/podcasts/",
+        "/events-calendar/",
+        "/recommended-reading/",
+    ]
+
+    leaked = []
+    for path in pages_to_check:
+        desktop_page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
+
+        admin_links = desktop_page.locator(
+            "a[href*='wp-admin'], a[href*='wp-login'], "
+            "a[href*='/administrator/'], a[href*='action=edit']"
+        )
+
+        for i in range(admin_links.count()):
+            link = admin_links.nth(i)
+            if link.is_visible():
+                href = link.get_attribute("href") or ""
+                text = link.text_content().strip()[:50]
+                leaked.append(f"{path}: '{text}' -> {href}")
+
+    assert len(leaked) == 0, (
+        f"Admin links visible on content pages: {leaked}"
     )
