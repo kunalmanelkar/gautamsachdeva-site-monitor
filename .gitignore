@@ -17,5 +17,6 @@ __pycache__/
 # Build artifacts
 *.egg-info/
 
-# Generated report (re-generate with: python generate_report.py)
+# Generated output (re-generate with: python generate_report.py)
 report.html
+_site/
