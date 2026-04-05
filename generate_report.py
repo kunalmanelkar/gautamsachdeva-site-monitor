@@ -171,7 +171,7 @@ TASKS = [
         "url": "https://gautamsachdeva.com/support-the-teaching/",
         "auto": [
             "test_support_page_content",
-            "test_support_page_donation_iframe",
+            "test_support_page_payment_buttons",
             "test_support_page_youtube_membership",
             "test_contact_page_payment_links",
             "test_bank_transfer_details_visible",
@@ -361,7 +361,7 @@ FRIENDLY_NAMES = {
     "test_podcast_page_episode_list": "Episode list / search present",
     "test_podcast_play_pause_controls": "Play/pause controls visible",
     "test_support_page_content": "Support page loads",
-    "test_support_page_donation_iframe": "Donation iframe loads",
+    "test_support_page_payment_buttons": "Payment method buttons present and working",
     "test_support_page_youtube_membership": "YouTube membership link works",
     "test_contact_page_payment_links": "Contact page has payment links",
     "test_bank_transfer_details_visible": "Bank transfer details visible",
@@ -387,7 +387,7 @@ FRIENDLY_NAMES = {
 
 SEVERITY = {
     "test_homepage_loads": "critical", "test_ssl_certificate_valid": "critical",
-    "test_support_page_donation_iframe": "critical", "test_homepage_no_admin_links": "critical",
+    "test_support_page_payment_buttons": "critical", "test_homepage_no_admin_links": "critical",
     "test_content_pages_no_admin_links": "critical",
     "test_books_page_displays_books": "high", "test_writings_page_loads": "high",
     "test_events_calendar_renders": "high", "test_podcast_page_audio_players": "high",
@@ -480,7 +480,7 @@ _TEST_URLS = {
     "test_podcast_play_pause_controls": "/podcasts/",
     "test_podcast_platform_links": "/podcasts/",
     "test_support_page_content": "/support-the-teaching/",
-    "test_support_page_donation_iframe": "/support-the-teaching/",
+    "test_support_page_payment_buttons": "/support-the-teaching/",
     "test_support_page_youtube_membership": "/support-the-teaching/",
     "test_contact_page_payment_links": "/contact/",
     "test_bank_transfer_details_visible": "/bank-transfer-details/",

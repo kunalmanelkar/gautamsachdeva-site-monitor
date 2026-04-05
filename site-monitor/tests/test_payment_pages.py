@@ -27,25 +27,40 @@ def test_support_page_content(desktop_page: Page):
     )
 
 
-def test_support_page_donation_iframe(desktop_page: Page):
-    """Support page has the donation iframe and it loads successfully."""
+def test_support_page_payment_buttons(desktop_page: Page):
+    """Support page has all 5 payment method buttons and their links work."""
     desktop_page.goto(
         f"{BASE_URL}/support-the-teaching/", wait_until="domcontentloaded"
     )
 
-    # Donation module is embedded as an iframe
-    donate_iframe = desktop_page.locator("iframe[src*='donate-module']")
-    assert donate_iframe.count() > 0, (
-        "Donation iframe not found on Support the Teaching page"
-    )
+    expected_buttons = {
+        "Bank Transfer": "bank-transfer-details",
+        "Google Pay": "google-pay",
+        "Youtube": "youtube.com",
+        "Paypal": "paypal.com",
+        "Patreon": "faq-patreon",
+    }
 
-    # Verify the iframe src URL is accessible
-    iframe_src = donate_iframe.first.get_attribute("src")
-    assert iframe_src, "Donation iframe has no src attribute"
-    status = check_link_status(iframe_src)
-    assert status == 0 or status < 400, (
-        f"Donation iframe URL broken: {iframe_src} (status {status})"
-    )
+    missing = []
+    broken = []
+    for label, href_fragment in expected_buttons.items():
+        btn = desktop_page.locator(
+            f"a.elementor-button[href*='{href_fragment}']"
+        )
+        if btn.count() == 0:
+            missing.append(label)
+            continue
+        href = btn.first.get_attribute("href") or ""
+        if href.startswith("/"):
+            href = BASE_URL + href
+        status = check_link_status(href)
+        # PayPal/Patreon may block bots
+        bot_blocked = any(d in href for d in ["paypal.com", "patreon.com"]) and status in (403, 405)
+        if not bot_blocked and (status >= 400 or status == -1):
+            broken.append(f"{label}: {href} (status {status})")
+
+    assert len(missing) == 0, f"Missing payment buttons: {missing}"
+    assert len(broken) == 0, f"Broken payment button links: {broken}"
 
 
 def test_support_page_youtube_membership(desktop_page: Page):
