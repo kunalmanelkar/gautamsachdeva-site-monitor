@@ -27,8 +27,14 @@ def test_homepage_images_loaded(desktop_page: Page):
         # Skip tracking pixels, spacers, and lazy-loaded placeholders
         if "data:image" in src or src.endswith(".svg"):
             continue
-        # Skip images that are not in viewport (lazy-loaded, may have naturalWidth 0)
-        is_visible = img.evaluate("el => el.getBoundingClientRect().top < window.innerHeight * 2")
+        # Skip images not actually rendered (display:none containers report top=0
+        # but width/height=0, so we must check both size and position)
+        is_visible = img.evaluate(
+            "el => {"
+            "  const r = el.getBoundingClientRect();"
+            "  return r.width > 0 && r.height > 0 && r.top < window.innerHeight * 2;"
+            "}"
+        )
         if not is_visible:
             continue
         natural_width = img.evaluate("el => el.naturalWidth")
