@@ -154,32 +154,38 @@ def test_homepage_book_cards_render(desktop_page: Page):
     """Homepage book section displays actual book cover images, not just text."""
     desktop_page.goto(BASE_URL, wait_until="networkidle")
 
-    # Books section uses Elementor widget-image elements with links to /book/ pages
-    # Class is "book-liist-block" on /books/ page, but homepage uses Elementor image widgets
-    book_section_images = desktop_page.locator(
-        "section.elementor-element-e9be399 .elementor-widget-image a[href*='/book/'] img, "
-        ".home-books .o-neuron-hover-holder img, "
-        ".book-liist-block img"
-    )
+    # Any image that links to a book page on the homepage
+    book_images = desktop_page.locator("a[href*='/book/'] img")
 
-    # Fallback: any image that links to a book page anywhere on the homepage
-    book_linked_images = desktop_page.locator("a[href*='/book/'] img")
+    # Filter to only VISIBLE images (skip ones inside display:none Elementor widgets)
+    visible = []
+    for i in range(book_images.count()):
+        img = book_images.nth(i)
+        is_rendered = img.evaluate(
+            "el => {"
+            "  const r = el.getBoundingClientRect();"
+            "  return r.width > 0 && r.height > 0;"
+            "}"
+        )
+        if is_rendered:
+            visible.append(img)
 
-    total = book_section_images.count() + book_linked_images.count()
-    assert total >= 3, (
-        f"Homepage shows only {total} book cover images (expected >= 3) — "
+    assert len(visible) >= 3, (
+        f"Homepage shows only {len(visible)} visible book cover images (expected >= 3) — "
         "books may not be rendering visually"
     )
 
-    # Verify at least 3 book cover images actually loaded (naturalWidth > 0)
+    # Scroll to the first book image to trigger lazy loading, then wait
+    visible[0].scroll_into_view_if_needed()
+    desktop_page.wait_for_timeout(2000)
+
     loaded = 0
-    for loc in [book_section_images, book_linked_images]:
-        for i in range(loc.count()):
-            natural_width = loc.nth(i).evaluate("el => el.naturalWidth")
-            if natural_width > 0:
-                loaded += 1
+    for img in visible:
+        natural_width = img.evaluate("el => el.naturalWidth")
+        if natural_width > 0:
+            loaded += 1
     assert loaded >= 3, (
-        f"Only {loaded} book cover images loaded on homepage (expected >= 3)"
+        f"Only {loaded} of {len(visible)} visible book cover images loaded on homepage (expected >= 3)"
     )
 
 
