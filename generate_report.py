@@ -22,7 +22,9 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 
-RESULTS_DIR = Path(__file__).parent / "site-monitor" / "results"
+# pytest writes results/latest.json relative to CWD (project root),
+# not relative to site-monitor/ where pytest.ini lives.
+RESULTS_DIR = Path(__file__).parent / "results"
 DEFAULT_OUTPUT = Path(__file__).parent / "report.html"
 
 # ---------------------------------------------------------------------------

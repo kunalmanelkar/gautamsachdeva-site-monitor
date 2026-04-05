@@ -13,9 +13,17 @@ def pytest_sessionfinish(session, exitstatus):
 
     Uses trylast=True to run after pytest-json-report writes the file.
     """
-    results_dir = Path(__file__).parent / "results"
-    latest = results_dir / "latest.json"
-    if latest.exists():
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        dated_file = results_dir / f"{date_str}.json"
-        shutil.copy2(latest, dated_file)
+    # pytest-json-report writes results/latest.json relative to CWD,
+    # which is the project root when running `pytest site-monitor/`.
+    # Check both locations for robustness.
+    candidates = [
+        Path.cwd() / "results" / "latest.json",           # CWD (project root)
+        Path(__file__).parent / "results" / "latest.json", # site-monitor/results/
+    ]
+    for latest in candidates:
+        if latest.exists():
+            results_dir = latest.parent
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            dated_file = results_dir / f"{date_str}.json"
+            shutil.copy2(latest, dated_file)
+            break
