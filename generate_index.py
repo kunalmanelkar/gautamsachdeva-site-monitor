@@ -70,7 +70,7 @@ def build_index(reports_dir: Path, output: Path) -> None:
 
         is_latest = rpt == latest
         history_rows.append(f"""
-        <a href="{rpt.name}" class="history-row{' latest' if is_latest else ''}">
+        <a href="{escape(rpt.name)}" class="history-row{' latest' if is_latest else ''}">
           <div class="history-date">
             <span class="history-day">{escape(nice_date)}</span>
             <span class="history-weekday">{escape(day_name)}</span>
@@ -88,7 +88,7 @@ def build_index(reports_dir: Path, output: Path) -> None:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url={latest.name}">
+<meta http-equiv="refresh" content="0; url={escape(latest.name)}">
 <title>Site Audit \u2014 gautamsachdeva.com</title>
 <style>
   :root {{
@@ -162,7 +162,7 @@ def build_index(reports_dir: Path, output: Path) -> None:
 
   <div class="redirect-note">
     Redirecting to the latest report\u2026
-    <a href="{latest.name}">Click here</a> if it doesn't redirect.
+    <a href="{escape(latest.name)}">Click here</a> if it doesn't redirect.
   </div>
 
   <h2>Audit History</h2>

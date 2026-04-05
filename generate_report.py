@@ -130,7 +130,6 @@ TASKS = [
             "test_event_detail_links_work",
             "test_events_calendar_renders_mobile",
             "test_events_page_mobile_no_overflow",
-            "test_homepage_upcoming_events_section",
             "test_homepage_events_section_mobile",
         ],
         "manual": [
@@ -631,7 +630,7 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str, str]:
         )
 
     # --- Missing content ---
-    if "no audio" in r or "no play" in r or "no.*player" in r:
+    if "no audio" in r or "no play" in r or ("no" in r and "player" in r):
         return (
             "The podcast player isn't loading — visitors can't listen to episodes on the page.",
             "The podcast plugin may have been deactivated or there's a JavaScript error. Check the Plugins page in WordPress admin.",
@@ -643,7 +642,7 @@ def humanize_error(fn: str, raw: str) -> tuple[str, str, str]:
             "Someone may have accidentally removed it while editing the page. Check the page content in WordPress.",
             url,
         )
-    if "no.*found" in r and "form" in r:
+    if "not found" in r and "form" in r:
         return (
             "The form on this page isn't showing up.",
             "The form plugin or embed code may have been removed or broken. Check the page editor in WordPress.",
@@ -1042,7 +1041,7 @@ def build_html(results: dict, output: Path) -> None:
         for fn in task["auto"]:
             variants = tests_by_func.get(fn, [])
             if not variants:
-                auto_items.append(f'<li class="auto-item skip"><span class="auto-icon">&#8212;</span><span>{escape(FRIENDLY_NAMES.get(fn, fn))}<div class="auto-err">Not run</div></span></li>')
+                auto_items.append(f'<li class="auto-item skip"><span class="auto-icon">&#8212;</span><div>{escape(FRIENDLY_NAMES.get(fn, fn))}<div class="auto-err">Not run</div></div></li>')
                 continue
             for v in variants:
                 nid = v.get("nodeid", "")
@@ -1061,7 +1060,7 @@ def build_html(results: dict, output: Path) -> None:
                         link_html = f'<div class="err-link"><a href="{escape(check_url)}" target="_blank">Check it yourself &#8599;</a></div>' if check_url else ''
                         raw_html = f'<details class="err-raw"><summary>Technical details</summary><pre>{escape(err)}</pre></details>'
                         err_html = f'<div class="auto-err"><div class="err-what">{escape(what)}</div>{do_html}{link_html}{raw_html}</div>'
-                    auto_items.append(f'<li class="auto-item fail"><span class="auto-icon">&#10007;</span><span>{escape(nm)}{err_html}</span></li>')
+                    auto_items.append(f'<li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>{escape(nm)}{err_html}</div></li>')
                 elif out == "skipped":
                     auto_skip += 1
                     auto_items.append(f'<li class="auto-item skip"><span class="auto-icon">&#8212;</span><span>{escape(nm)}</span></li>')

@@ -27,11 +27,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r site-monitor/requirements.txt
+          pip install -e .
           playwright install chromium --with-deps
 
       - name: Run Playwright tests
         run: |
+          mkdir -p results screenshots
           pytest site-monitor/ \
             --json-report --json-report-file=results/latest.json \
             --screenshot=only-on-failure --output=screenshots \
@@ -49,7 +50,6 @@ jobs:
           DATE=$(date -u +%Y-%m-%d)
           mkdir -p reports
           python generate_report.py -o "reports/${DATE}.html"
-          cp "reports/${DATE}.html" report.html
 
       - name: Generate index page
         run: |
@@ -65,8 +65,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add results/ reports/ screenshots/ 2>/dev/null || true
-          SUMMARY=$(python3 -c "import json;s=json.load(open('results/latest.json'))['summary'];print(f\"{s.get('passed',0)} passed, {s.get('failed',0)} failed\")")
+          git add results/ reports/ 2>/dev/null || true
+          if [ -f results/latest.json ]; then
+            SUMMARY=$(python3 -c "import json;s=json.load(open('results/latest.json'))['summary'];print(f\"{s.get('passed',0)} passed, {s.get('failed',0)} failed\")")
+          else
+            SUMMARY="no results"
+          fi
           git diff --cached --quiet || git commit -m "audit: $(date -u +%Y-%m-%d) — ${SUMMARY}"
           git push
 

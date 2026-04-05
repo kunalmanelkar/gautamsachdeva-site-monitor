@@ -1,7 +1,5 @@
 """T1: SSL cert, T3: mobile responsiveness, T4: broken link scan, TTFB measurement."""
 
-import time
-
 import pytest
 from playwright.sync_api import Page
 

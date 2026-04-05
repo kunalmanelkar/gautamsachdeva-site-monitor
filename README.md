@@ -1,17 +1,18 @@
 # Site Health Monitor — gautamsachdeva.com
 
-Automated Playwright test suite (74 checks) that monitors [gautamsachdeva.com](https://gautamsachdeva.com) for regressions, broken links, missing content, SSL issues, and more. Results are turned into a self-contained HTML audit report that volunteers can open in any browser.
+Automated Playwright test suite (74 checks) that monitors [gautamsachdeva.com](https://gautamsachdeva.com) for regressions, broken links, missing content, SSL issues, and more. Results are turned into a volunteer-friendly HTML audit report deployed to GitHub Pages.
 
 ## How it works
 
 1. **GitHub Actions runs 74 Playwright tests daily** at 8 AM UTC.
-2. Tests results are converted into a **volunteer-friendly HTML report** — plain English errors, "How to check this" instructions, clickable links.
+2. Test results are converted into a **plain-English HTML report** — humanized errors, "How to check this" instructions, clickable verification links.
 3. The report is **deployed to GitHub Pages** — one permanent URL always shows the latest audit, with a history of past audits.
 4. Volunteers open the link, work through manual checks, add notes, and download their completed report.
 
 ## Live audit
 
 Once deployed, the latest audit is always at:
+
 ```
 https://<your-github-username>.github.io/gautamsachdeva-site-monitor/
 ```
@@ -26,7 +27,9 @@ pip install -e .
 playwright install chromium
 
 # Run the tests
-pytest site-monitor/ -v
+pytest site-monitor/ \
+  --json-report --json-report-file=results/latest.json \
+  -v
 
 # Generate the report
 python generate_report.py          # -> report.html
@@ -40,6 +43,8 @@ generate_report.py      # Generates a single HTML audit report from test results
 generate_index.py       # Generates index.html with history of all audits
 results/                # JSON test reports (latest + dated archives)
 reports/                # Dated HTML reports (committed by CI)
+docs/
+  UPTIMEROBOT_SETUP.md  # UptimeRobot integration guide (reference)
 site-monitor/
   pytest.ini            # pytest configuration
   conftest.py           # Root conftest — archives results by date
@@ -58,10 +63,11 @@ site-monitor/
 ## GitHub Actions + Pages
 
 The workflow (`.github/workflows/site-monitor.yml`):
-1. Runs 74 Playwright tests daily
-2. Generates a dated HTML report (`reports/2026-04-05.html`)
-3. Generates an index page with audit history
+
+1. Runs 74 Playwright tests daily at 8 AM UTC
+2. Generates a dated HTML report (`reports/YYYY-MM-DD.html`)
+3. Builds an index page with audit history
 4. Commits results and reports to the repo
 5. Deploys to GitHub Pages
 
-To enable: go to repo Settings > Pages > Source > **GitHub Actions**.
+To enable: go to repo **Settings > Pages > Source > GitHub Actions**.
