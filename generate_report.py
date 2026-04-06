@@ -257,6 +257,7 @@ TASKS = [
             "test_podcast_play_pause_controls",
             "test_podcast_platform_links",
             "test_podcast_episode_archive",
+            "test_podcast_page_loads_on_mobile",
         ],
         "manual": [
             {
@@ -276,12 +277,11 @@ TASKS = [
     {
         "id": 11,
         "title": "Other Pages & Technical",
-        "description": "Galleries, Mentors, FAQ, SSL certificate, mobile layout, broken link scan.",
+        "description": "Galleries, Profile, FAQ, SSL certificate, mobile layout, broken link scan.",
         "url": "https://gautamsachdeva.com",
         "auto": [
             "test_photo_galleries_load_images",
             "test_gallery_pages_individually",
-            "test_mentors_page_exists",
             "test_homage_page_loads",
             "test_faq_page_loads",
             "test_patreon_faq_page_loads",
@@ -294,6 +294,7 @@ TASKS = [
             "test_mobile_no_horizontal_overflow_pixel7",
             "test_key_pages_broken_link_scan",
             "test_amazon_book_links",
+            "test_retreat_videos_page",
         ],
         "manual": [
             {
@@ -340,7 +341,6 @@ FRIENDLY_NAMES = {
     "test_recommended_reading_page": "Recommended reading lists books",
     "test_events_page_key_links": "Events page has key links",
     "test_gallery_pages_individually": "Gallery page loads",
-    "test_mentors_page_exists": "Mentors page exists (not 404)",
     "test_homage_page_loads": "Homage page loads",
     "test_recommended_reading_subpages": "Reading sub-page loads",
     "test_faq_page_loads": "FAQ page loads",
@@ -374,6 +374,8 @@ FRIENDLY_NAMES = {
     "test_social_media_links_accessible": "Social media links accessible",
     "test_amazon_book_links": "Amazon purchase links work",
     "test_podcast_platform_links": "Podcast platform links work",
+    "test_podcast_page_loads_on_mobile": "Podcast loads on mobile",
+    "test_retreat_videos_page": "Retreat Videos page loads",
     "test_ssl_certificate_valid": "SSL certificate valid (>14 days)",
     "test_mobile_no_horizontal_overflow": "No overflow (iPhone 14)",
     "test_mobile_no_horizontal_overflow_pixel7": "No overflow (Pixel 7)",
@@ -391,11 +393,12 @@ SEVERITY = {
     "test_books_page_displays_books": "high", "test_writings_page_loads": "high",
     "test_events_calendar_renders": "high", "test_podcast_page_audio_players": "high",
     "test_desktop_dropdown_menus": "high", "test_mobile_hamburger_menu": "high",
-    "test_mentors_page_exists": "high", "test_dropdown_works_on_subpages": "high",
+    "test_dropdown_works_on_subpages": "high",
     "test_photo_galleries_load_images": "high", "test_nav_dropdown_subpages_exist": "high",
     "test_homepage_book_cards_render": "high", "test_homepage_upcoming_events_section": "high",
     "test_books_page_images_load": "high", "test_individual_event_clickthrough": "high",
-    "test_podcast_play_pause_controls": "high", "test_mailing_list_form_fillable": "high",
+    "test_podcast_play_pause_controls": "high", "test_podcast_page_loads_on_mobile": "high",
+    "test_mailing_list_form_fillable": "high",
     "test_events_calendar_renders_mobile": "high", "test_events_page_mobile_no_overflow": "high",
 }
 
@@ -460,7 +463,6 @@ _TEST_URLS = {
     "test_homepage_events_section_mobile": "/",
     "test_photo_galleries_load_images": "/photo-gallery/",
     "test_gallery_pages_individually": None,  # parametrized, extracted from error
-    "test_mentors_page_exists": "/mentors/",
     "test_homage_page_loads": "/homage/",
     "test_about_page_content": "/about/",
     "test_recommended_reading_page": "/recommended-reading/",
@@ -477,6 +479,8 @@ _TEST_URLS = {
     "test_podcast_page_audio_players": "/podcasts/",
     "test_podcast_page_episode_list": "/podcasts/",
     "test_podcast_play_pause_controls": "/podcasts/",
+    "test_podcast_page_loads_on_mobile": "/podcasts/",
+    "test_retreat_videos_page": "/retreat-videos/",
     "test_podcast_platform_links": "/podcasts/",
     "test_support_page_content": "/support-the-teaching/",
     "test_support_page_payment_buttons": "/support-the-teaching/",

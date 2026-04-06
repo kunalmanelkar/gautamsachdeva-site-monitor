@@ -188,6 +188,23 @@ def test_homepage_book_cards_render(desktop_page: Page):
         f"Only {loaded} of {len(visible)} visible book cover images loaded on homepage (expected >= 3)"
     )
 
+    # Check book covers aren't elongated — normal ratio is ~0.6-0.8 (width/height)
+    elongated = []
+    for img in visible:
+        dims = img.evaluate("""el => {
+            const r = el.getBoundingClientRect();
+            return { w: r.width, h: r.height };
+        }""")
+        if dims["h"] > 0:
+            ratio = dims["w"] / dims["h"]
+            # Book covers are portrait; ratio < 0.3 means severely elongated
+            if ratio < 0.3:
+                src = img.evaluate("el => el.src?.split('/').pop()") or "unknown"
+                elongated.append(f"{src} (ratio={ratio:.2f}, {dims['w']}x{dims['h']})")
+    assert len(elongated) == 0, (
+        f"Book covers appear elongated on homepage: {elongated}"
+    )
+
 
 def test_homepage_upcoming_events_section(desktop_page: Page):
     """Homepage events section renders the MEC calendar widget or event listings."""

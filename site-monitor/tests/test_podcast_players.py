@@ -1,5 +1,7 @@
 """F9: Audio players load, episode search, Patreon links on podcast page."""
 
+import time
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -120,4 +122,34 @@ def test_podcast_play_pause_controls(desktop_page: Page):
     }""")
     assert audio_src and len(audio_src) > 10, (
         f"Audio element has no valid source: {audio_src}"
+    )
+
+
+def test_podcast_page_loads_on_mobile(mobile_page: Page):
+    """Podcast page loads within acceptable time on mobile viewport."""
+    start = time.time()
+    resp = mobile_page.goto(
+        f"{BASE_URL}/podcasts/", wait_until="domcontentloaded"
+    )
+    domcontent_time = time.time() - start
+
+    assert resp and resp.status == 200, (
+        f"/podcasts/ returned HTTP {resp.status if resp else 'no response'} on mobile"
+    )
+
+    # Wait for player widgets to initialize
+    mobile_page.wait_for_timeout(3000)
+
+    # Audio player or episode content should be present on mobile
+    audio = mobile_page.locator("audio")
+    players = mobile_page.locator("[class*='player'], [class*='audio']")
+    episodes = mobile_page.locator("a[href*='PatreonPodcastsGenerator']")
+
+    assert audio.count() > 0 or players.count() > 0 or episodes.count() >= 3, (
+        "Podcast page has no audio content on mobile viewport"
+    )
+
+    # DOMContentLoaded should be under 15s even on mobile
+    assert domcontent_time < 15, (
+        f"Podcast page DOMContentLoaded took {domcontent_time:.1f}s on mobile (expected < 15s)"
     )

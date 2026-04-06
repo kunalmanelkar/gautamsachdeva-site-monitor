@@ -40,14 +40,14 @@ def test_desktop_dropdown_menus(desktop_page: Page):
     nav_html = desktop_page.locator("nav").first.inner_html().lower()
     expected_submenu_items = [
         # About dropdown
-        "about gautam", "homage",
+        "homage",
         # Resources dropdown
         "blog", "podcasts", "books to read",
-        # Gallery dropdown
-        "photo gallery", "mentors", "mystics", "talks",
+        # Gallery dropdown — "Mentors" label links to /photo-gallery/
+        "mentors", "mystics", "talks", "profile",
     ]
     found = [item for item in expected_submenu_items if item in nav_html]
-    assert len(found) >= 8, f"Only {len(found)}/9 expected submenu items found: {found}"
+    assert len(found) >= 7, f"Only {len(found)}/{len(expected_submenu_items)} expected submenu items found: {found}"
 
 
 def test_mobile_hamburger_menu(mobile_page: Page):
