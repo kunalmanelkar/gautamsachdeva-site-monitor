@@ -87,24 +87,57 @@ def test_photo_galleries_load_images(desktop_page: Page):
             )
             continue
 
-        # Verify nested <img> tags actually loaded (naturalWidth > 0).
-        # Gallery items are DIVs with WOW.js visibility animation; the real
-        # <img> is nested inside.  CSS visibility depends on WOW.js init which
-        # is unreliable in headless browsers, so we only hard-fail on broken
-        # image sources.
+        # Force WOW.js hidden images to be visible so the browser actually
+        # downloads them (headless Chrome may skip hidden images).
+        # Then re-trigger any lazy-loaded src attributes and wait for loads.
         stats = desktop_page.evaluate("""() => {
             const items = document.querySelectorAll('.m-media-gallery__item');
-            let loaded = 0;
+            // Force visibility on all gallery items and their children
             for (const item of items) {
-                const img = item.querySelector('img') || item;
-                if (img.tagName === 'IMG' && img.naturalWidth > 0) loaded++;
+                item.style.visibility = 'visible';
+                item.style.opacity = '1';
+                for (const el of item.querySelectorAll('*')) {
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                }
             }
-            return { total: items.length, loaded };
+            // Re-trigger lazy-loaded images by re-assigning src
+            const imgs = [];
+            for (const item of items) {
+                const img = item.querySelector('img');
+                if (img) {
+                    const src = img.getAttribute('src') || img.dataset.src || '';
+                    if (src && !src.startsWith('data:')) {
+                        img.src = src;
+                    }
+                    imgs.push(img);
+                }
+            }
+            return { total: items.length, imgCount: imgs.length };
         }""")
-        if stats["loaded"] < stats["total"]:
+
+        # Give images time to download after forcing visibility
+        desktop_page.wait_for_timeout(3000)
+
+        # Now check which images actually loaded
+        result = desktop_page.evaluate("""() => {
+            const items = document.querySelectorAll('.m-media-gallery__item');
+            let loaded = 0;
+            const broken = [];
+            for (const item of items) {
+                const img = item.querySelector('img');
+                if (img && img.naturalWidth > 0) {
+                    loaded++;
+                } else if (img) {
+                    broken.push(img.getAttribute('src') || '(no src)');
+                }
+            }
+            return { total: items.length, loaded, broken: broken.slice(0, 3) };
+        }""")
+        if result["loaded"] < result["total"]:
             failures.append(
-                f"{name} ({path}): {stats['loaded']}/{stats['total']} images loaded "
-                f"(broken src or failed to download)"
+                f"{name} ({path}): {result['loaded']}/{result['total']} images loaded "
+                f"(sample broken: {result['broken']})"
             )
 
     assert len(failures) == 0, f"Gallery page failures: {failures}"
