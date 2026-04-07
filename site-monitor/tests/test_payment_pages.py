@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL, check_link_status
+from .conftest import BASE_URL, check_link_status, is_bot_blocked
 
 
 def test_support_page_content(desktop_page: Page):
@@ -54,9 +54,9 @@ def test_support_page_payment_buttons(desktop_page: Page):
         if href.startswith("/"):
             href = BASE_URL + href
         status = check_link_status(href)
-        # PayPal/Patreon may block bots
-        bot_blocked = any(d in href for d in ["paypal.com", "patreon.com"]) and status in (403, 405)
-        if not bot_blocked and (status >= 400 or status == -1):
+        if is_bot_blocked(href, status):
+            continue
+        if (status >= 400 or status == -1):
             broken.append(f"{label}: {href} (status {status})")
 
     assert len(missing) == 0, f"Missing payment buttons: {missing}"
@@ -78,7 +78,7 @@ def test_support_page_youtube_membership(desktop_page: Page):
 
 
 def test_contact_page_payment_links(desktop_page: Page):
-    """Contact page has payment method links (bank transfer, Google Pay, PayPal)."""
+    """Contact page has payment method links (bank transfer, Google Pay, PayPal, YouTube)."""
     desktop_page.goto(f"{BASE_URL}/contact/", wait_until="domcontentloaded")
 
     # Payment links are on the Contact page
@@ -86,6 +86,7 @@ def test_contact_page_payment_links(desktop_page: Page):
         "Bank Transfer": "a[href*='bank-transfer']",
         "Google Pay": "a[href*='google-pay']",
         "PayPal": "a[href*='paypal']",
+        "YouTube Membership": "a[href*='youtube.com'][href*='join']",
     }
 
     found = {}
@@ -93,10 +94,10 @@ def test_contact_page_payment_links(desktop_page: Page):
         links = desktop_page.locator(selector)
         found[name] = links.count() > 0
 
-    # All 3 payment methods must be linked
+    # All 4 payment methods must be linked
     found_count = sum(found.values())
     missing = [name for name, present in found.items() if not present]
-    assert found_count == 3, f"Only {found_count}/3 payment links found. Missing: {missing}"
+    assert found_count == 4, f"Only {found_count}/4 payment links found. Missing: {missing}"
 
 
 def test_bank_transfer_details_visible(desktop_page: Page):
@@ -132,4 +133,6 @@ def test_paypal_link_accessible(desktop_page: Page):
 
     href = paypal_link.first.get_attribute("href")
     status = check_link_status(href)
-    assert status == 0 or status < 400, f"PayPal link broken: status {status}"
+    assert is_bot_blocked(href, status) or status == 0 or status < 400, (
+        f"PayPal link broken: status {status}"
+    )

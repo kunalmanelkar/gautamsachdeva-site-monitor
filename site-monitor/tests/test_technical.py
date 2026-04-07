@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page
 
-from .conftest import BASE_URL, check_link_status, get_ssl_expiry_days
+from .conftest import BASE_URL, check_link_status, get_ssl_expiry_days, is_bot_blocked
 
 
 def test_ssl_certificate_valid(desktop_page: Page):
@@ -62,9 +62,6 @@ def test_key_pages_broken_link_scan(desktop_page: Page):
         "amazon.com", "spotify.com", "podcasts.apple.com",
     ]
 
-    # Patreon blocks bots with 403 — exclude from failure
-    bot_blocked_domains = ["patreon.com"]
-
     all_broken = []
 
     for path in key_pages:
@@ -89,13 +86,10 @@ def test_key_pages_broken_link_scan(desktop_page: Page):
 
         for href in list(seen)[:15]:  # Cap at 15 per page for speed
             status = check_link_status(href, timeout=10)
+            if is_bot_blocked(href, status):
+                continue
             if status >= 400 or status == -1:
-                # Skip bot-blocked domains returning 403
-                is_bot_blocked = any(
-                    domain in href for domain in bot_blocked_domains
-                ) and status == 403
-                if not is_bot_blocked:
-                    all_broken.append(f"{href} (from {path}, status {status})")
+                all_broken.append(f"{href} (from {path}, status {status})")
 
     assert len(all_broken) == 0, (
         f"Broken links found across key pages ({len(all_broken)}): "

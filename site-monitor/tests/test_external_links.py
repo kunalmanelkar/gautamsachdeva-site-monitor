@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page
 
-from .conftest import BASE_URL, check_link_status
+from .conftest import BASE_URL, check_link_status, is_bot_blocked
 
 
 SOCIAL_MEDIA_DOMAINS = {
@@ -29,8 +29,7 @@ def test_social_media_links_accessible(desktop_page: Page):
 
         href = links.first.get_attribute("href")
         status = check_link_status(href)
-        # Patreon returns 403 for bot user-agents — accept as "present"
-        if platform == "Patreon" and status == 403:
+        if is_bot_blocked(href, status):
             continue
         if status >= 400 or status == -1:
             broken.append(f"{platform}: {href} (status {status})")
@@ -106,6 +105,8 @@ def test_podcast_platform_links(desktop_page: Page):
 
         href = links.first.get_attribute("href")
         status = check_link_status(href)
+        if is_bot_blocked(href, status):
+            continue
         if status >= 400 or status == -1:
             broken.append(f"{platform}: {href} (status {status})")
 

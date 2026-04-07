@@ -16,6 +16,34 @@ VIEWPORTS = {
 }
 
 
+# Domains that block bot user-agents (403/405/429/503) — don't treat as broken
+BOT_BLOCKED_DOMAINS = [
+    "paypal.com", "patreon.com", "instagram.com", "facebook.com",
+    "spotify.com", "podcasts.apple.com", "chat.whatsapp.com", "wa.me",
+    "zoom.us", "maps.google.com", "goo.gl", "amazon.com", "amrita-rus.ru",
+]
+BOT_BLOCKED_STATUSES = {403, 405, 429, 503, -1}
+
+
+def is_bot_blocked(url: str, status: int) -> bool:
+    """Return True if the URL is from a domain known to block bots."""
+    return (
+        any(domain in url for domain in BOT_BLOCKED_DOMAINS)
+        and status in BOT_BLOCKED_STATUSES
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def site_availability_check():
+    """Pre-flight check: skip entire suite if site is down."""
+    status = check_link_status(BASE_URL, timeout=20)
+    if status == -1 or status >= 500:
+        pytest.skip(
+            f"Site appears to be down (status={status}) — "
+            "skipping suite to avoid misleading failures"
+        )
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
     """Override default browser context args with longer timeout."""

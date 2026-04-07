@@ -5,7 +5,7 @@ import re
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL, check_link_status
+from .conftest import BASE_URL, check_link_status, is_bot_blocked
 
 
 def test_homepage_loads(desktop_page: Page):
@@ -145,7 +145,7 @@ def test_homepage_video_embeds_load(desktop_page: Page):
         )
         # Verify the YouTube embed URL is reachable
         status = check_link_status(src)
-        assert status == 0 or status < 400, (
+        assert is_bot_blocked(src, status) or status == 0 or status < 400, (
             f"YouTube embed URL broken: {src} (status {status})"
         )
 

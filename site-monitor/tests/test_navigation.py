@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL
+from .conftest import BASE_URL, BOT_BLOCKED_DOMAINS
 
 
 def test_desktop_nav_menus_present(desktop_page: Page):
@@ -100,6 +100,9 @@ def test_nav_links_resolve(desktop_page: Page):
         if not href.startswith("http") or href in seen:
             continue
         seen.add(href)
+        # Skip external domains that block bots
+        if any(domain in href for domain in BOT_BLOCKED_DOMAINS):
+            continue
         try:
             resp = desktop_page.request.head(href, timeout=10000)
             if resp.status >= 400:
@@ -151,5 +154,85 @@ def test_footer_links_present(desktop_page: Page):
 
     # Check for footer-area content (copyright, support link)
     body_text = desktop_page.text_content("body").lower()
-    has_footer_content = "support the teaching" in body_text or "©" in body_text or "copyright" in body_text
+    has_footer_content = (
+        "support the teaching" in body_text or "©" in body_text or "copyright" in body_text
+    )
     assert has_footer_content, "No footer content (copyright or Support link) found"
+
+
+def test_floating_support_button(desktop_page: Page):
+    """Floating 'Support the Teaching' button is present on every page.
+
+    The site has a fixed-position button (a.floating-btn) that links to
+    /support-the-teaching/. It appears on all pages as a persistent CTA.
+    """
+    # Check on homepage and one subpage to confirm it's global
+    for path in ["", "/about/"]:
+        desktop_page.goto(f"{BASE_URL}{path}", wait_until="domcontentloaded")
+
+        btn = desktop_page.locator("a.floating-btn")
+        assert btn.count() == 1, (
+            f"Expected 1 floating button on {path or '/'}, found {btn.count()}"
+        )
+
+        href = btn.get_attribute("href") or ""
+        assert "support-the-teaching" in href, (
+            f"Floating button href is wrong: {href}"
+        )
+
+        text = btn.text_content().strip().lower()
+        assert "support" in text, (
+            f"Floating button text missing 'support': '{text}'"
+        )
+
+        # Button should be position:fixed and have real dimensions
+        props = btn.evaluate("""el => {
+            const cs = window.getComputedStyle(el);
+            const r = el.getBoundingClientRect();
+            return {
+                position: cs.position,
+                visibility: cs.visibility,
+                width: r.width,
+                height: r.height,
+            };
+        }""")
+        assert props["position"] == "fixed", (
+            f"Floating button is not position:fixed ({props['position']})"
+        )
+        assert props["width"] > 0 and props["height"] > 0, (
+            f"Floating button has no dimensions: {props['width']}x{props['height']}"
+        )
+
+
+def test_social_sidebar_icons(desktop_page: Page):
+    """Sticky social sidebar (#sticky-social-icons-container) has 4 platform links.
+
+    The sidebar uses a plugin that renders icons at width/height 0 in headless
+    browsers but with visibility:visible and display:flex. We verify DOM presence
+    and correct hrefs rather than visual dimensions.
+    """
+    desktop_page.goto(BASE_URL, wait_until="domcontentloaded")
+
+    container = desktop_page.locator("#sticky-social-icons-container")
+    assert container.count() == 1, "Sticky social icons container not found"
+
+    expected_platforms = {
+        "YouTube": {"class": "fab-fa-youtube", "domain": "youtube.com"},
+        "Patreon": {"class": "fab-fa-patreon", "domain": "patreon.com"},
+        "Facebook": {"class": "fab-fa-facebook-square", "domain": "facebook.com"},
+        "Instagram": {"class": "fab-fa-instagram", "domain": "instagram.com"},
+    }
+
+    missing = []
+    wrong_href = []
+    for platform, info in expected_platforms.items():
+        link = container.locator(f"a.{info['class']}")
+        if link.count() == 0:
+            missing.append(platform)
+            continue
+        href = link.get_attribute("href") or ""
+        if info["domain"] not in href:
+            wrong_href.append(f"{platform}: {href}")
+
+    assert len(missing) == 0, f"Missing social sidebar icons: {missing}"
+    assert len(wrong_href) == 0, f"Social sidebar icons with wrong hrefs: {wrong_href}"

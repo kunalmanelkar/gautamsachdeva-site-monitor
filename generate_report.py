@@ -75,6 +75,7 @@ TASKS = [
         "auto": [
             "test_get_updates_form_elements",
             "test_mailing_list_form_fillable",
+            "test_mailinglist_redirects_to_getupdates",
         ],
         "manual": [
             {
@@ -155,6 +156,7 @@ TASKS = [
         "auto": [
             "test_social_media_links_accessible",
             "test_footer_links_present",
+            "test_social_sidebar_icons",
         ],
         "manual": [
             {
@@ -173,6 +175,7 @@ TASKS = [
             "test_support_page_payment_buttons",
             "test_support_page_youtube_membership",
             "test_contact_page_payment_links",
+            "test_floating_support_button",
             "test_bank_transfer_details_visible",
             "test_google_pay_upi_visible",
             "test_paypal_link_accessible",
@@ -333,6 +336,8 @@ FRIENDLY_NAMES = {
     "test_nav_links_resolve": "All nav links resolve",
     "test_dropdown_works_on_subpages": "Dropdowns work on sub-pages",
     "test_footer_links_present": "Footer has social links",
+    "test_floating_support_button": "Floating 'Support' button present",
+    "test_social_sidebar_icons": "Social sidebar icons (YT, FB, Insta, Patreon)",
     "test_books_page_displays_books": "Books page shows book items",
     "test_writings_page_loads": "Writings page shows posts",
     "test_events_calendar_renders": "Events calendar renders",
@@ -371,6 +376,7 @@ FRIENDLY_NAMES = {
     "test_contact_page_key_links": "Contact page has key links",
     "test_whatsapp_invite_link": "WhatsApp link works",
     "test_mailing_list_form_fillable": "Form fields are fillable",
+    "test_mailinglist_redirects_to_getupdates": "/mailinglist redirects to /getupdates/",
     "test_social_media_links_accessible": "Social media links accessible",
     "test_amazon_book_links": "Amazon purchase links work",
     "test_podcast_platform_links": "Podcast platform links work",
@@ -399,6 +405,8 @@ SEVERITY = {
     "test_books_page_images_load": "high", "test_individual_event_clickthrough": "high",
     "test_podcast_play_pause_controls": "high", "test_podcast_page_loads_on_mobile": "high",
     "test_mailing_list_form_fillable": "high",
+    "test_floating_support_button": "high",
+    "test_mailinglist_redirects_to_getupdates": "high",
     "test_events_calendar_renders_mobile": "high", "test_events_page_mobile_no_overflow": "high",
 }
 

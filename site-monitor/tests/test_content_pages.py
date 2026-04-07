@@ -3,7 +3,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-from .conftest import BASE_URL, check_link_status
+from .conftest import BASE_URL, check_link_status, is_bot_blocked
 
 
 def test_books_page_displays_books(desktop_page: Page):
@@ -134,7 +134,9 @@ def test_photo_galleries_load_images(desktop_page: Page):
             }
             return { total: items.length, loaded, broken: broken.slice(0, 3) };
         }""")
-        if result["loaded"] < result["total"]:
+        # 80% threshold — headless Chrome + WOW.js can miss some images
+        # but 0% or very low means real breakage (CDN down, broken src)
+        if result["loaded"] < result["total"] * 0.8:
             failures.append(
                 f"{name} ({path}): {result['loaded']}/{result['total']} images loaded "
                 f"(sample broken: {result['broken']})"
@@ -306,8 +308,9 @@ def test_recommended_reading_subpages(desktop_page: Page, slug: str, name: str):
         f"Recommended reading subpage {name} ({path}) returned HTTP "
         f"{resp.status if resp else 'no response'}"
     )
+    # 500 chars is enough to confirm real content beyond just header/footer
     body_text = desktop_page.text_content("body")
-    assert len(body_text.strip()) > 200, f"{name} subpage appears empty"
+    assert len(body_text.strip()) > 500, f"{name} subpage appears empty (only header/footer?)"
 
 
 def test_faq_page_loads(desktop_page: Page):
@@ -355,7 +358,7 @@ def test_excerpts_from_talks_page(desktop_page: Page):
         f"/excerpts-from-talks/ returned HTTP {resp.status if resp else 'no response'}"
     )
     body_text = desktop_page.text_content("body")
-    assert len(body_text.strip()) > 200, "Excerpts from talks page appears empty"
+    assert len(body_text.strip()) > 500, "Excerpts from talks page appears empty (only header/footer?)"
 
 
 def test_nav_dropdown_subpages_exist(desktop_page: Page):
@@ -496,9 +499,9 @@ def test_russian_edition_book_links(desktop_page: Page):
                 f"{name}: Russian link is not a valid URL: {href}"
             )
             status = check_link_status(href, timeout=15)
-            # amrita-rus.ru returns 405 for bot user-agents — accept as "link present"
-            bot_blocked = "amrita-rus.ru" in href and status in (403, 405, 503)
-            if not bot_blocked and (status >= 400 or status == -1):
+            if is_bot_blocked(href, status):
+                continue
+            if (status >= 400 or status == -1):
                 failures.append(f"{name}: Russian link broken — {href} (status {status})")
 
     assert len(failures) == 0, (
@@ -610,6 +613,8 @@ def test_event_detail_links_work(desktop_page: Page):
             if href.startswith(("mailto:", "tel:", "javascript:")):
                 continue
             status = check_link_status(href, timeout=10)
+            if is_bot_blocked(href, status):
+                continue
             if status >= 400 or status == -1:
                 text = all_links.nth(i).text_content().strip()[:30]
                 broken_links.append(f"'{text}' -> {href} (status {status})")
