@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site Audit — gautamsachdeva.com — 2026-06-29</title>
+<style>
+:root {
+  --font: Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --pass-bg: #ECFDF5; --pass-fg: #065F46; --pass-bd: #A7F3D0;
+  --warn-bg: #FFFBEB; --warn-fg: #92400E; --warn-bd: #FDE68A;
+  --fail-bg: #FEF2F2; --fail-fg: #991B1B; --fail-bd: #FECACA;
+  --info-bg: #F0F4FF; --info-fg: #3730A3; --info-bd: #C7D2FE;
+  --surface: #FFFFFF; --surface2: #F9FAFB; --surface3: #F3F4F6;
+  --border: #E5E7EB; --border2: #F0F1F3;
+  --text1: #111827; --text2: #4B5563; --text3: #9CA3AF;
+  --accent: #6366F1; --accent-light: #EEF2FF;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: var(--font); font-size: 15px; line-height: 1.55;
+  color: var(--text1); background: var(--surface2); margin: 0;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 80px;
+}
+
+/* === HEADER === */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.header-inner {
+  max-width: 720px; margin: 0 auto; padding: 28px 20px 20px;
+}
+.header h1 {
+  font-size: 22px; font-weight: 700; margin: 0 0 2px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.header .subtitle {
+  font-size: 13px; color: var(--text3); margin-top: 2px;
+}
+.header .site-link {
+  font-size: 13px; color: var(--accent); text-decoration: none;
+  font-weight: 500;
+}
+.header .site-link:hover { text-decoration: underline; }
+
+/* === SUMMARY STRIP === */
+.summary-strip {
+  max-width: 720px; margin: 0 auto; padding: 16px 20px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.summary-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 100px; font-size: 13px;
+  font-weight: 600; border: 1px solid;
+}
+.summary-pill.pass { background: var(--pass-bg); color: var(--pass-fg); border-color: var(--pass-bd); }
+.summary-pill.fail { background: var(--fail-bg); color: var(--fail-fg); border-color: var(--fail-bd); }
+.summary-pill.skip { background: var(--surface3); color: var(--text3); border-color: var(--border); }
+.summary-pill.time { background: var(--surface); color: var(--text2); border-color: var(--border); }
+
+/* === STICKY PROGRESS === */
+.progress-sticky {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.progress-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 14px;
+}
+.progress-label { font-size: 13px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+.progress-track {
+  flex: 1; height: 6px; background: var(--surface3); border-radius: 100px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--accent), #818CF8);
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.progress-count {
+  font-size: 13px; font-weight: 600; color: var(--text1);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* === VOLUNTEER BAR === */
+.vol-bar {
+  max-width: 720px; margin: 16px auto 0; padding: 0 20px;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+}
+.vol-bar label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.vol-bar input, .vol-bar select {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 12px; font-size: 15px; font-family: var(--font);
+  background: var(--surface); color: var(--text1);
+}
+.vol-bar input { width: 180px; }
+.vol-bar input:focus, .vol-bar select:focus {
+  outline: 2px solid var(--accent); border-color: transparent;
+}
+
+/* === TASK CARDS === */
+.tasks { max-width: 720px; margin: 20px auto 0; padding: 0 20px; }
+.task {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 14px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+
+/* Task header */
+.task-hd {
+  padding: 16px 20px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 14px;
+  transition: background .15s;
+}
+.task-hd:hover { background: var(--surface2); }
+.task-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.task-hd.has-fail .task-num { background: var(--fail-bg); color: var(--fail-fg); }
+.task-hd.all-pass .task-num { background: var(--pass-bg); color: var(--pass-fg); }
+.task-hd.neutral  .task-num { background: var(--surface3); color: var(--text2); }
+.task-title-text { flex: 1; font-weight: 600; font-size: 15px; }
+.task-status-tag {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 100px;
+  letter-spacing: .3px; text-transform: uppercase; flex-shrink: 0;
+}
+.task-hd.has-fail .task-status-tag { background: var(--fail-bg); color: var(--fail-fg); }
+.task-hd.all-pass .task-status-tag { background: var(--pass-bg); color: var(--pass-fg); }
+.task-hd.neutral  .task-status-tag { background: var(--surface3); color: var(--text3); }
+.chevron {
+  font-size: 11px; color: var(--text3); transition: transform .2s;
+  flex-shrink: 0;
+}
+.chevron.open { transform: rotate(180deg); }
+
+/* Task body */
+.task-body { padding: 0 20px 20px; }
+.task-desc {
+  font-size: 13px; color: var(--text3); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.task-url {
+  font-size: 12px; color: var(--accent); text-decoration: none;
+  background: var(--accent-light); padding: 2px 8px; border-radius: 6px;
+}
+.task-url:hover { text-decoration: underline; }
+
+/* Section labels */
+.section-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--text3); margin: 18px 0 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border2);
+}
+.section-label .icon { font-style: normal; }
+
+/* Automated checks (collapsed summary) */
+.auto-summary {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; overflow: hidden;
+}
+.auto-header {
+  padding: 10px 14px; font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  list-style: none;
+}
+.auto-header::-webkit-details-marker { display: none; }
+.auto-header::before {
+  content: '\25B6'; font-size: 8px; color: var(--text3);
+  transition: transform .2s;
+}
+details[open] > .auto-header::before { transform: rotate(90deg); }
+.auto-tag {
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 100px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.auto-tag.ok { background: var(--pass-bg); color: var(--pass-fg); }
+.auto-tag.issue { background: var(--fail-bg); color: var(--fail-fg); }
+.auto-list { list-style: none; padding: 0; margin: 0; }
+.auto-item {
+  padding: 7px 14px; font-size: 13px; border-top: 1px solid var(--border2);
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.auto-icon { flex-shrink: 0; font-size: 13px; line-height: 1.55; }
+.auto-item.pass { color: var(--text2); }
+.auto-item.pass .auto-icon { color: var(--pass-fg); }
+.auto-item.fail { color: var(--fail-fg); font-weight: 500; }
+.auto-item.fail .auto-icon { color: var(--fail-fg); }
+.auto-item.skip { color: var(--text3); }
+.auto-item.skip .auto-icon { color: var(--text3); }
+.auto-err {
+  margin-top: 6px; padding: 10px 12px; border-radius: 8px;
+  background: var(--fail-bg); border: 1px solid var(--fail-bd);
+  font-size: 13px; color: var(--fail-fg); font-weight: 400; line-height: 1.5;
+}
+.auto-err .err-what { font-weight: 500; }
+.auto-err .err-do { color: var(--text2); margin-top: 4px; font-size: 12px; }
+.auto-err .err-link {
+  margin-top: 8px;
+}
+.auto-err .err-link a {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  text-decoration: none; padding: 4px 12px;
+  border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--surface); transition: background .15s;
+}
+.auto-err .err-link a:hover { background: var(--accent-light); }
+.auto-err .err-raw {
+  margin-top: 6px;
+}
+.auto-err .err-raw summary {
+  font-size: 11px; color: var(--text3); cursor: pointer; list-style: none; user-select: none;
+}
+.auto-err .err-raw summary::-webkit-details-marker { display: none; }
+.auto-err .err-raw pre {
+  font-size: 11px; color: var(--text3); margin: 4px 0 0; white-space: pre-wrap;
+  word-break: break-word; font-family: var(--font); line-height: 1.4;
+}
+
+/* Manual checks */
+.manual-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+  transition: border-color .15s, opacity .3s, background .3s;
+}
+.manual-card:hover { border-color: #C5CAD1; }
+.manual-card.done { opacity: .65; background: var(--surface2); border-color: var(--pass-bd); }
+.manual-label {
+  display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.manual-cb {
+  appearance: none; -webkit-appearance: none;
+  width: 22px; height: 22px; min-width: 22px;
+  border: 2px solid #D1D5DB; border-radius: 6px;
+  cursor: pointer; position: relative; margin-top: 1px;
+  transition: background .15s, border-color .15s; background: #FFF;
+}
+.manual-cb:hover { border-color: #9CA3AF; }
+.manual-cb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.manual-cb:checked { background: var(--accent); border-color: var(--accent); }
+.manual-cb:checked::after {
+  content: ''; position: absolute; top: 3px; left: 7px;
+  width: 5px; height: 10px; border: solid #FFF; border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+  animation: checkPop .2s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes checkPop {
+  0% { transform: rotate(45deg) scale(0); }
+  50% { transform: rotate(45deg) scale(1.2); }
+  100% { transform: rotate(45deg) scale(1); }
+}
+.manual-text { font-size: 15px; font-weight: 500; color: var(--text1); }
+.manual-card.done .manual-text { color: var(--text3); text-decoration: line-through; }
+.manual-help {
+  margin: 8px 0 0 34px;
+}
+.manual-help summary {
+  font-size: 13px; color: var(--accent); cursor: pointer;
+  font-weight: 500; list-style: none; user-select: none;
+}
+.manual-help summary::-webkit-details-marker { display: none; }
+.manual-help summary::before {
+  content: '?'; display: inline-flex; align-items: center;
+  justify-content: center; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent);
+  font-size: 10px; font-weight: 700; margin-right: 6px;
+}
+.manual-help-body {
+  background: #F8FAFF; border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px;
+  font-size: 13px; line-height: 1.6; color: var(--text2);
+}
+
+/* Notes */
+.notes-area { margin-top: 14px; }
+.notes-area label { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.notes-area textarea {
+  display: block; width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 15px; font-family: var(--font);
+  resize: vertical; margin-top: 6px; min-height: 48px;
+  background: var(--surface2); color: var(--text1);
+}
+.notes-area textarea:focus { outline: 2px solid var(--accent); border-color: transparent; background: #FFF; }
+
+/* === BOTTOM BAR === */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border); padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 200;
+}
+.bottom-bar .hint { font-size: 12px; color: var(--text3); }
+.btn {
+  padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600; font-family: var(--font);
+  transition: filter .15s;
+}
+.btn:hover { filter: brightness(.93); }
+.btn-primary { background: var(--accent); color: #FFF; }
+.btn-ghost { background: transparent; color: var(--text2); }
+.btn-ghost:hover { background: var(--surface3); }
+.btns { display: flex; gap: 6px; }
+
+/* === PRINT === */
+@media print {
+  .bottom-bar, .vol-bar, .progress-sticky { display: none !important; }
+  .task-body { display: block !important; }
+  .task { break-inside: avoid; box-shadow: none; }
+  body { padding-bottom: 0; background: #fff; }
+}
+/* === MOBILE === */
+@media (max-width: 600px) {
+  .header-inner, .summary-strip, .vol-bar, .tasks { padding-left: 14px; padding-right: 14px; }
+  .progress-sticky { padding: 10px 14px; }
+  .task-hd { padding: 14px; gap: 10px; }
+  .task-body { padding: 0 14px 16px; }
+  .vol-bar input { width: 130px; }
+  body { font-size: 16px; }
+  .manual-text { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>Site Audit Report</h1>
+    <div class="subtitle">June 29, 2026 at 09:50 AM &nbsp;&middot;&nbsp;
+      <a class="site-link" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com &#8599;</a>
+    </div>
+  </div>
+</div>
+
+<div class="summary-strip">
+  <span class="summary-pill pass">&#10003; 72 passed</span>
+  <span class='summary-pill fail'>&#10007; 6 failed</span>
+  
+  <span class="summary-pill time">&#9201; 443s</span>
+</div>
+
+<div class="progress-sticky">
+  <div class="progress-inner">
+    <span class="progress-label">Your progress</span>
+    <div class="progress-track"><div class="progress-fill" id="pbar" style="width:0%"></div></div>
+    <span class="progress-count" id="pcount">0/25</span>
+  </div>
+</div>
+
+<div class="vol-bar">
+  <label for="vname">Name</label>
+  <input id="vname" placeholder="Your name">
+  <label for="vdevice">Device</label>
+  <select id="vdevice"><option>Mobile</option><option>Desktop</option><option>Both</option></select>
+</div>
+
+<div class="tasks">
+
+        <section class="task" id="task-1">
+          <div class="task-hd all-pass" onclick="toggle(1)">
+            <span class="task-num">1</span>
+            <span class="task-title-text">Home Page</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-1">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-1" style="display:none">
+            <p class="task-desc">Page loads fast, all links and images work, videos play, layout looks correct. <a class="task-url" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                10 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Homepage loads (HTTP 200)</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Images load without errors</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Key sections present (podcast, book, event, about)</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Internal links resolve (no 404/500)</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Newsletter CTA visible</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Video embed loads (YouTube)</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Book covers render visually</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Events section present</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>No admin links leak</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Page speed (TTFB)</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-1-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-1-0" data-task="1" data-idx="0">
+                <span class="manual-text">Layout and alignment looks correct on your device</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Scroll the entire homepage. Check that no text overlaps, no images are cut off, and sections are evenly spaced. Compare mobile vs desktop if possible.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-1-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-1-1" data-task="1" data-idx="1">
+                <span class="manual-text">No spelling mistakes or garbled characters</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Scan all visible headings and paragraph text. Look for broken characters like &quot;Ã©&quot; or missing words.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-1-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-1-2" data-task="1" data-idx="2">
+                <span class="manual-text">Russian edition book links go to the correct page</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">If the homepage shows Russian-language book links, tap each one and confirm it opens a page on amrita-rus.ru with the correct book.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-1">Notes</label>
+              <textarea id="notes-1" data-task="1" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-2">
+          <div class="task-hd all-pass" onclick="toggle(2)">
+            <span class="task-num">2</span>
+            <span class="task-title-text">Mailing List (Get Updates)</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-2">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-2" style="display:none">
+            <p class="task-desc">Subscription form loads, all fields work, and a test email arrives. <a class="task-url" href="https://gautamsachdeva.com/getupdates/" target="_blank">gautamsachdeva.com/getupdates/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                3 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Form has required fields</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Form fields are fillable</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>/mailinglist redirects to /getupdates/</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-2-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-2-0" data-task="2" data-idx="0">
+                <span class="manual-text">Submit a test subscription and confirm the welcome email arrives</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Fill in your name, email, city, country. Check both checkboxes. Click Subscribe. Check your inbox (and spam) within 5 minutes for a confirmation email.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-2-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-2-1" data-task="2" data-idx="1">
+                <span class="manual-text">Confirmation email has correct branding and working links</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Open the confirmation email. Verify it says &quot;Gautam Sachdeva&quot;, has no broken images, and all links inside the email open correctly.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-2">Notes</label>
+              <textarea id="notes-2" data-task="2" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-3">
+          <div class="task-hd all-pass" onclick="toggle(3)">
+            <span class="task-num">3</span>
+            <span class="task-title-text">WhatsApp Group</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-3">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-3" style="display:none">
+            <p class="task-desc">The &quot;Join WhatsApp Group&quot; button at the bottom of the homepage opens the right group. <a class="task-url" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                1 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>WhatsApp link works</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-3-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-3-0" data-task="3" data-idx="0">
+                <span class="manual-text">Link opens WhatsApp and shows the correct group</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">On your phone, tap the WhatsApp button. Confirm WhatsApp opens and shows a group related to Gautam Sachdeva. If it says &quot;invite link is revoked&quot;, the link has expired.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-3">Notes</label>
+              <textarea id="notes-3" data-task="3" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-4">
+          <div class="task-hd all-pass" onclick="toggle(4)">
+            <span class="task-num">4</span>
+            <span class="task-title-text">Contact Us</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-4">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-4" style="display:none">
+            <p class="task-desc">All links work: mailing list, email, talks (YouTube), Patreon. <a class="task-url" href="https://gautamsachdeva.com/contact/" target="_blank">gautamsachdeva.com/contact/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                2 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Contact page has key links</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Contact page has mailto links</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-4-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-4-0" data-task="4" data-idx="0">
+                <span class="manual-text">&quot;Email Us&quot; opens your email app</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Tap/click the &quot;Email Us&quot; or info@gautamsachdeva.com link. Your email client (Gmail, Outlook, Apple Mail) should open with a new message pre-addressed to info@gautamsachdeva.com.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-4">Notes</label>
+              <textarea id="notes-4" data-task="4" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-5">
+          <div class="task-hd has-fail" onclick="toggle(5)">
+            <span class="task-num">5</span>
+            <span class="task-title-text">Events</span>
+            <span class="task-status-tag">1 issue</span>
+            <span class="chevronopen" id="chev-5">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-5">
+            <p class="task-desc">Events page loads, individual events open, registration links and forms work. <a class="task-url" href="https://gautamsachdeva.com/events-calendar/" target="_blank">gautamsachdeva.com/events-calendar/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary"open>
+              <summary class="auto-header">
+                7 checks ran
+                <span class="auto-tag issue">1 issue</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Events calendar renders</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Events page has key links</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Event detail pages load</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Event detail links work</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Events calendar on mobile</span></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>Events page no overflow (mobile)<div class="auto-err"><div class="err-what">The page is wider than the screen on mobile phones, causing awkward sideways scrolling.</div><div class="err-do">This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS.</div><div class="err-link"><a href="https://gautamsachdeva.com/events-calendar/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: Events page has horizontal overflow on mobile — scrollWidth=405px vs clientWidth=390px. Widest element: DIV.row (420px)</pre></details></div></div></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Homepage events on mobile</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-5-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-5-0" data-task="5" data-idx="0">
+                <span class="manual-text">Each listed event shows the correct date and time</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Compare the dates shown on the events page with what you know to be correct (check with the team if unsure). Look for past events still showing as upcoming.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-5-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-5-1" data-task="5" data-idx="1">
+                <span class="manual-text">Registration forms inside events work</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Click into an event that has a registration form. Try filling it out (you can use test data). Confirm the form submits without errors.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-5-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-5-2" data-task="5" data-idx="2">
+                <span class="manual-text">WhatsApp/phone links inside events work on your phone</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">If an event page shows a phone number or WhatsApp link, tap it on your phone. Phone numbers should open the dialer; WhatsApp links should open WhatsApp.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-5">Notes</label>
+              <textarea id="notes-5" data-task="5" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-6">
+          <div class="task-hd all-pass" onclick="toggle(6)">
+            <span class="task-num">6</span>
+            <span class="task-title-text">Social Media Links</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-6">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-6" style="display:none">
+            <p class="task-desc">YouTube, Facebook, Instagram, and Patreon links (top right) open the correct profiles. <a class="task-url" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                3 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Social media links accessible</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Footer has social links</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Social sidebar icons (YT, FB, Insta, Patreon)</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-6-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-6-0" data-task="6" data-idx="0">
+                <span class="manual-text">Each link opens the correct profile or channel</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Click each social icon. YouTube should open Gautam&#x27;s channel, Facebook his page, Instagram his profile, Patreon his creator page. If any opens a 404 or wrong account, flag it.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-6">Notes</label>
+              <textarea id="notes-6" data-task="6" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-7">
+          <div class="task-hd has-fail" onclick="toggle(7)">
+            <span class="task-num">7</span>
+            <span class="task-title-text">Support the Teaching</span>
+            <span class="task-status-tag">2 issues</span>
+            <span class="chevronopen" id="chev-7">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-7">
+            <p class="task-desc">Donation page loads; Bank Transfer, Google Pay, PayPal, and YouTube Membership all work. <a class="task-url" href="https://gautamsachdeva.com/support-the-teaching/" target="_blank">gautamsachdeva.com/support-the-teaching/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary"open>
+              <summary class="auto-header">
+                8 checks ran
+                <span class="auto-tag issue">2 issues</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Support page loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Payment method buttons present and working</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>YouTube membership link works</span></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>Contact page has payment links<div class="auto-err"><div class="err-what">Only 0/4 payment links found. Missing: [&#x27;Bank Transfer&#x27;, &#x27;Google Pay&#x27;, &#x27;PayPal&#x27;, &#x27;YouTube Membership&#x27;]</div><div class="err-link"><a href="https://gautamsachdeva.com/contact/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: Only 0/4 payment links found. Missing: [&#x27;Bank Transfer&#x27;, &#x27;Google Pay&#x27;, &#x27;PayPal&#x27;, &#x27;YouTube Membership&#x27;]</pre></details></div></div></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Floating &#x27;Support&#x27; button present</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Bank transfer details visible</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Google Pay UPI ID visible</span></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>PayPal link accessible<div class="auto-err"><div class="err-what">No PayPal link found on Contact page</div><div class="err-link"><a href="https://gautamsachdeva.com/contact/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: No PayPal link found on Contact page</pre></details></div></div></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-7-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-7-0" data-task="7" data-idx="0">
+                <span class="manual-text">Bank account number and IFSC are correct</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Verify the account number (920010066530594), IFSC (UTIB0000447), and bank name (Axis Bank) match what&#x27;s on the page. If they differ, this is critical.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-7-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-7-1" data-task="7" data-idx="1">
+                <span class="manual-text">Google Pay UPI ID is correct</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">The page should show gautamadvaita@axl as the UPI ID. Try scanning or copying it into Google Pay to confirm it resolves to the right recipient.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-7-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-7-2" data-task="7" data-idx="2">
+                <span class="manual-text">PayPal link lands on the correct PayPal.me page</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Click the PayPal link. It should open a PayPal.me page for the correct person, not a 404 or someone else&#x27;s page.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-7">Notes</label>
+              <textarea id="notes-7" data-task="7" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-8">
+          <div class="task-hd has-fail" onclick="toggle(8)">
+            <span class="task-num">8</span>
+            <span class="task-title-text">Dropdown Menus</span>
+            <span class="task-status-tag">1 issue</span>
+            <span class="chevronopen" id="chev-8">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-8">
+            <p class="task-desc">All navigation dropdowns work on both mobile (hamburger menu) and desktop. <a class="task-url" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary"open>
+              <summary class="auto-header">
+                5 checks ran
+                <span class="auto-tag issue">1 issue</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Desktop nav has all items</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Dropdown menus have sub-items</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Mobile hamburger menu works</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>All nav links resolve</span></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>Dropdowns work on sub-pages<div class="auto-err"><div class="err-what">The dropdown navigation menus aren&#x27;t opening properly when you hover over them.</div><div class="err-do">This is a CSS or JavaScript issue with the website theme. It may affect visitors trying to navigate the site. Let the website admin know.</div><div class="err-link"><a href="https://gautamsachdeva.com/about/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: Dropdowns broken on /about/ page: [&#x27;AboutGautamHomage&#x27;, &#x27;ResourcesBlogBooks to Read&#x27;, &#x27;GalleryMentorsMystics, Teacher&#x27;]</pre></details></div></div></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-8-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-8-0" data-task="8" data-idx="0">
+                <span class="manual-text">Mobile: hamburger menu opens, dropdowns expand, sub-items load pages</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">On your phone, tap the three-line (hamburger) icon. Tap each dropdown (About, Resources, Gallery). Tap a sub-item and confirm the correct page loads.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-8-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-8-1" data-task="8" data-idx="1">
+                <span class="manual-text">Desktop: hover dropdowns open, clicking sub-items loads pages</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">On desktop, hover over About, Resources, and Gallery in the nav bar. Each should show a dropdown. Click a sub-item and confirm the page loads.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-8">Notes</label>
+              <textarea id="notes-8" data-task="8" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-9">
+          <div class="task-hd all-pass" onclick="toggle(9)">
+            <span class="task-num">9</span>
+            <span class="task-title-text">Reads (Books, Writings, Recommended Reading)</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-9">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-9" style="display:none">
+            <p class="task-desc">Pages load with images, book covers link to the right pages, no admin links visible. <a class="task-url" href="https://gautamsachdeva.com/books/" target="_blank">gautamsachdeva.com/books/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                15 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Books page shows book items</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Book cover images load</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Writings page shows posts</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Writing featured images load</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Recommended reading lists books</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: siddharameshwar-maharaj-Siddharameshwar Maharaj</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: nisargadatta-maharaj-Nisargadatta Maharaj</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: ramesh-balsekar-Ramesh Balsekar</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: ramana-maharshi-Ramana Maharshi</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: eckhart-tolle-Eckhart Tolle</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: santosh-sachdeva-Santosh Sachdeva</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Reading sub-page loads: the-sacred-india-tarot-The Sacred India Tarot</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Russian edition links accessible</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>About page has content + images</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>No admin links on content pages</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-9-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-9-0" data-task="9" data-idx="0">
+                <span class="manual-text">Clicking a book cover goes to the correct book (not the wrong one)</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">On the Books page, click 2-3 book covers. Each should open a page about THAT book, with the correct title and description.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-9-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-9-1" data-task="9" data-idx="1">
+                <span class="manual-text">No admin or edit links visible anywhere</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Look for links like &quot;Edit&quot;, &quot;wp-admin&quot;, or anything that looks like a WordPress dashboard link. These should never be visible to the public.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-9-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-9-2" data-task="9" data-idx="2">
+                <span class="manual-text">Russian edition links open the correct Russian book page</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Open &quot;Pointers from Ramesh Balsekar&quot; and &quot;The Buddha&#x27;s Sword&quot;. Each should have a &quot;Russian&quot; link. Click it — it should open amrita-rus.ru with the matching book.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-9">Notes</label>
+              <textarea id="notes-9" data-task="9" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-10">
+          <div class="task-hd all-pass" onclick="toggle(10)">
+            <span class="task-num">10</span>
+            <span class="task-title-text">Podcasts &amp; Player</span>
+            <span class="task-status-tag">all clear</span>
+            <span class="chevron" id="chev-10">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-10" style="display:none">
+            <p class="task-desc">Player loads, play/pause works, episodes are listed, Spotify link works. <a class="task-url" href="https://gautamsachdeva.com/podcasts/" target="_blank">gautamsachdeva.com/podcasts/</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary">
+              <summary class="auto-header">
+                6 checks ran
+                <span class="auto-tag ok">all clear</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Audio player present</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Episode list / search present</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Play/pause controls visible</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Podcast platform links work</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Podcast archive loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Podcast loads on mobile</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-10-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-10-0" data-task="10" data-idx="0">
+                <span class="manual-text">Press Play — audio actually plays</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Click the play button. Wait 3 seconds. You should hear audio. If the button changes to pause but there&#x27;s no sound, the audio source may be broken.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-10-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-10-1" data-task="10" data-idx="1">
+                <span class="manual-text">Episode search box filters episodes when you type</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Find the search box on the podcast page. Type a keyword (e.g. &quot;awareness&quot;). The episode list should filter to show only matching episodes.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-10-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-10-2" data-task="10" data-idx="2">
+                <span class="manual-text">&quot;Listen on Spotify&quot; opens the correct podcast page</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Click the Spotify link. It should open Spotify (app or web) and show Gautam Sachdeva&#x27;s podcast, not a 404 or wrong podcast.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-10">Notes</label>
+              <textarea id="notes-10" data-task="10" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+        <section class="task" id="task-11">
+          <div class="task-hd has-fail" onclick="toggle(11)">
+            <span class="task-num">11</span>
+            <span class="task-title-text">Other Pages &amp; Technical</span>
+            <span class="task-status-tag">2 issues</span>
+            <span class="chevronopen" id="chev-11">&#9662;</span>
+          </div>
+          <div class="task-body" id="body-11">
+            <p class="task-desc">Galleries, Profile, FAQ, SSL certificate, mobile layout, broken link scan. <a class="task-url" href="https://gautamsachdeva.com" target="_blank">gautamsachdeva.com</a></p>
+
+            <div class="section-label"><em class="icon">&#9881;</em> Automated checks</div>
+            <details class="auto-summary"open>
+              <summary class="auto-header">
+                18 checks ran
+                <span class="auto-tag issue">2 issues</span>
+              </summary>
+              <ul class="auto-list"><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Gallery pages load images</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Gallery page loads: /photo-gallery/-Mentors</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Gallery page loads: /photos-with-mystics-teachers-authors/-Mystics, Teachers, Authors</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Gallery page loads: /photos-from-talks/-Photos from Talks</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Gallery page loads: /profile/-Profile</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Homage page loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>FAQ page loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Patreon FAQ loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Excerpts page loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>All dropdown pages return 200</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Refund policy loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Donations page loads</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>SSL certificate valid (&gt;14 days)</span></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>No overflow (iPhone 14)<div class="auto-err"><div class="err-what">The page is wider than the screen on mobile phones, causing awkward sideways scrolling.</div><div class="err-do">This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS.</div><div class="err-link"><a href="https://gautamsachdeva.com/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: Homepage has horizontal overflow on mobile viewport (390px) — content extends beyond screen width</pre></details></div></div></li><li class="auto-item fail"><span class="auto-icon">&#10007;</span><div>No overflow (Pixel 7)<div class="auto-err"><div class="err-what">The page is wider than the screen on mobile phones, causing awkward sideways scrolling.</div><div class="err-do">This is a layout bug — something on the page is too wide for phone screens. A developer needs to inspect which element is overflowing and fix the CSS.</div><div class="err-link"><a href="https://gautamsachdeva.com/" target="_blank">Check it yourself &#8599;</a></div><details class="err-raw"><summary>Technical details</summary><pre>AssertionError: Homepage has horizontal overflow on Pixel 7 viewport (412px)</pre></details></div></div></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Broken link scan</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Amazon purchase links work</span></li><li class="auto-item pass"><span class="auto-icon">&#10003;</span><span>Retreat Videos page loads</span></li></ul>
+            </details>
+
+            <div class="section-label"><em class="icon">&#9997;</em> Your turn</div>
+            
+            <div class="manual-card" id="card-m-11-0">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-11-0" data-task="11" data-idx="0">
+                <span class="manual-text">Gallery images are not stretched or pixelated</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Visit Photo Gallery, Mentors, and Photos from Talks pages. Images should look sharp and maintain their natural proportions (not squeezed or stretched).</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-11-1">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-11-1" data-task="11" data-idx="1">
+                <span class="manual-text">Books on homepage are not elongated — aspect ratio looks natural</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">Scroll to the Books section on the homepage. Book covers should look like normal book covers — roughly 2:3 ratio, not tall and thin or short and wide.</div>
+              </details>
+            </div>
+            <div class="manual-card" id="card-m-11-2">
+              <label class="manual-label">
+                <input type="checkbox" class="manual-cb" id="m-11-2" data-task="11" data-idx="2">
+                <span class="manual-text">Newsletter forward/share buttons work</span>
+              </label>
+              <details class="manual-help">
+                <summary>How to check this</summary>
+                <div class="manual-help-body">If you received a recent newsletter email, try the forward and share buttons inside it. Confirm the forwarded email arrives and looks correct.</div>
+              </details>
+            </div>
+
+            <div class="notes-area">
+              <label for="notes-11">Notes</label>
+              <textarea id="notes-11" data-task="11" rows="1" placeholder="Anything to flag for this section..."></textarea>
+            </div>
+          </div>
+        </section>
+</div>
+
+<div class="bottom-bar">
+  <span class="hint">Progress auto-saved in this browser</span>
+  <div class="btns">
+    <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+    <button class="btn btn-primary" onclick="download()">Download Report</button>
+  </div>
+</div>
+
+<script>
+const TOTAL_MANUAL = 25;
+const KEY = 'audit-2026-06-29';
+
+function toggle(id) {
+  const b = document.getElementById('body-'+id);
+  const c = document.getElementById('chev-'+id);
+  const show = b.style.display === 'none';
+  b.style.display = show ? '' : 'none';
+  c.classList.toggle('open', show);
+}
+
+// --- State ---
+function load() { try { return JSON.parse(localStorage.getItem(KEY))||{}; } catch { return {}; } }
+function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+function collect() {
+  const s = { name: document.getElementById('vname').value, device: document.getElementById('vdevice').value, checks: {}, notes: {} };
+  document.querySelectorAll('.manual-cb').forEach(cb => s.checks[cb.id] = cb.checked);
+  document.querySelectorAll('textarea[data-task]').forEach(t => s.notes[t.id] = t.value);
+  return s;
+}
+function restore() {
+  const s = load();
+  if (s.name) document.getElementById('vname').value = s.name;
+  if (s.device) document.getElementById('vdevice').value = s.device;
+  if (s.checks) Object.entries(s.checks).forEach(([id,v]) => {
+    const el = document.getElementById(id);
+    if (el) { el.checked = v; if (v) document.getElementById('card-'+id)?.classList.add('done'); }
+  });
+  if (s.notes) Object.entries(s.notes).forEach(([id,v]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  });
+}
+function updateProgress() {
+  const done = document.querySelectorAll('.manual-cb:checked').length;
+  const pct = TOTAL_MANUAL ? Math.round(done/TOTAL_MANUAL*100) : 0;
+  document.getElementById('pbar').style.width = pct+'%';
+  document.getElementById('pcount').textContent = done+'/'+TOTAL_MANUAL;
+}
+
+// Wire events
+document.querySelectorAll('.manual-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const card = document.getElementById('card-'+cb.id);
+    card?.classList.toggle('done', cb.checked);
+    if (navigator.vibrate) navigator.vibrate(10);
+    save(collect()); updateProgress();
+  });
+});
+document.querySelectorAll('textarea[data-task]').forEach(t => t.addEventListener('input', () => save(collect())));
+document.getElementById('vname').addEventListener('input', () => save(collect()));
+document.getElementById('vdevice').addEventListener('change', () => save(collect()));
+
+restore(); updateProgress();
+
+// Open failed sections
+document.querySelectorAll('.task-hd.has-fail').forEach(h => {
+  const id = h.closest('.task').id.replace('task-','');
+  document.getElementById('chev-'+id)?.classList.add('open');
+});
+
+function resetAll() {
+  if (!confirm('Clear all your notes and checkboxes?')) return;
+  localStorage.removeItem(KEY);
+  document.querySelectorAll('.manual-cb').forEach(cb => { cb.checked = false; document.getElementById('card-'+cb.id)?.classList.remove('done'); });
+  document.querySelectorAll('textarea[data-task]').forEach(t => t.value = '');
+  document.getElementById('vname').value = '';
+  updateProgress();
+}
+
+function download() {
+  const c = document.documentElement.cloneNode(true);
+  // Bake state
+  document.querySelectorAll('.manual-cb').forEach((cb,i) => {
+    const cc = c.querySelectorAll('.manual-cb')[i];
+    if (cb.checked) cc.setAttribute('checked',''); else cc.removeAttribute('checked');
+    const card = c.querySelectorAll('.manual-card')[i];
+    if (cb.checked) card?.classList.add('done'); else card?.classList.remove('done');
+  });
+  document.querySelectorAll('textarea').forEach((ta,i) => c.querySelectorAll('textarea')[i].textContent = ta.value);
+  document.querySelectorAll('input[type=text]').forEach((inp,i) => c.querySelectorAll('input[type=text]')[i].setAttribute('value', inp.value));
+  const sels = document.querySelectorAll('select');
+  sels.forEach((sel,i) => {
+    const opts = c.querySelectorAll('select')[i].querySelectorAll('option');
+    opts.forEach(o => o.removeAttribute('selected'));
+    if (opts[sel.selectedIndex]) opts[sel.selectedIndex].setAttribute('selected','');
+  });
+  c.querySelectorAll('.task-body').forEach(b => b.style.display = '');
+  c.querySelectorAll('.chevron').forEach(ch => ch.classList.add('open'));
+  const vol = document.getElementById('vname').value || 'volunteer';
+  const blob = new Blob(['<!DOCTYPE html><html>'+c.innerHTML+'</html>'], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'site-audit-2026-06-29-' + vol.toLowerCase().replace(/\s+/g,'-') + '.html';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
